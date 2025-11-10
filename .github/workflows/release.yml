@@ -29,6 +29,7 @@ jobs:
       - name: Publish artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then pnpm exec electron-builder --win --publish always; fi
           if [ "$RUNNER_OS" = "macOS" ]; then pnpm exec electron-builder --mac --publish always; fi

@@ -4,9 +4,6 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import electronLog from 'electron-log'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 const log = (() => {
   try {
@@ -56,7 +53,9 @@ function createWindow(): void {
 function setupAutoUpdate(): void {
   if (log) autoUpdater.logger = log
   // For private GitHub releases, uncomment and pass a token via env:
-  autoUpdater.requestHeaders = { Authorization: `token ${process.env.GH_TOKEN ?? ''}` }
+  // autoUpdater.requestHeaders = {
+  //   Authorization: `token ${process.env.GH_TOKEN ?? ''}`
+  // }
 
   autoUpdater.on('checking-for-update', () => {
     mainWindow?.webContents.send('updater:status', { state: 'checking' })

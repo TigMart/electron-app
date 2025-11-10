@@ -16,7 +16,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
 
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
@@ -29,7 +28,7 @@ jobs:
 
       - name: Publish artifacts
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # create this repo secret
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then pnpm exec electron-builder --win --publish always; fi
           if [ "$RUNNER_OS" = "macOS" ]; then pnpm exec electron-builder --mac --publish always; fi

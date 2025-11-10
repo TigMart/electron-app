@@ -4,6 +4,9 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import electronLog from 'electron-log'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const log = (() => {
   try {

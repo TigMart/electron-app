@@ -1,30 +1,43 @@
 import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'error' | 'downloaded'>(
+    'idle'
+  )
+  const [percent, setPercent] = useState(0)
 
-  // in a React component
+  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const hasUpdater = typeof window !== 'undefined' && !!window.api
+
   useEffect(() => {
+    if (!hasUpdater) return
+
     const offStatus = window.api.onUpdaterStatus((p) => {
-      // p.state: 'checking' | 'available' | 'idle' | 'error' | 'downloaded'
-      // show a toast or update UI
+      setStatus(p.state)
       console.log('status:', p)
     })
     const offProgress = window.api.onUpdaterProgress((p) => {
-      // p.percent, p.bytesPerSecond, etc.
+      setPercent(p.percent)
       console.log('progress:', Math.round(p.percent))
     })
-
-    // optional manual check button:
-    // await window.api.checkForUpdates()
 
     return () => {
       offStatus()
       offProgress()
     }
-  }, [])
+  }, [hasUpdater])
+
+  const checkNow = async (): Promise<void> => {
+    if (!hasUpdater) return
+    try {
+      const res = await window.api.checkForUpdates()
+      console.log('manual check result:', res)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   return (
     <>
@@ -34,9 +47,11 @@ function App(): React.JSX.Element {
         Build an Electron app with <span className="react">React</span>
         &nbsp;and <span className="ts">TypeScript</span>
       </div>
+
       <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
+        Press <code>F12</code> to open DevTools
       </p>
+
       <div className="actions">
         <div className="action">
           <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
@@ -44,12 +59,25 @@ function App(): React.JSX.Element {
           </a>
         </div>
         <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
+          <button onClick={ipcHandle}>Send IPC</button>
+        </div>
+        <div className="action">
+          <button onClick={checkNow} disabled={!hasUpdater}>
+            Check for updates
+          </button>
         </div>
       </div>
-      <Versions></Versions>
+
+      {/* Simple updater UI */}
+      <div style={{ marginTop: 12 }}>
+        <div>
+          Updater status: <b>{status}</b>
+        </div>
+        {percent > 0 && percent < 100 ? <div>Downloading: {percent.toFixed(1)}%</div> : null}
+        {status === 'downloaded' && <div>✅ Update downloaded. App will install on restart.</div>}
+      </div>
+
+      <Versions />
     </>
   )
 }

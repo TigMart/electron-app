@@ -19,11 +19,6 @@ jobs:
 
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
-      
-      - name: Install snapcraft (Linux only)
-        if: runner.os == 'Linux'
-        run: |
-          sudo snap install snapcraft --classic
 
       - name: Install deps
         run: pnpm install --frozen-lockfile

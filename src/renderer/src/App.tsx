@@ -1,8 +1,30 @@
 import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
+import { useEffect } from 'react'
 
 function App(): React.JSX.Element {
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+
+  // in a React component
+  useEffect(() => {
+    const offStatus = window.api.onUpdaterStatus((p) => {
+      // p.state: 'checking' | 'available' | 'idle' | 'error' | 'downloaded'
+      // show a toast or update UI
+      console.log('status:', p)
+    })
+    const offProgress = window.api.onUpdaterProgress((p) => {
+      // p.percent, p.bytesPerSecond, etc.
+      console.log('progress:', Math.round(p.percent))
+    })
+
+    // optional manual check button:
+    // await window.api.checkForUpdates()
+
+    return () => {
+      offStatus()
+      offProgress()
+    }
+  }, [])
 
   return (
     <>

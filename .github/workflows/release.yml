@@ -28,7 +28,7 @@ jobs:
 
       - name: Publish artifacts
         env:
-          GH_TOKEN: ${{ secrets.personal-access-token }} 
+          GH_TOKEN: ${{ secrets.GH_TOKEN }} 
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then pnpm exec electron-builder --win --publish always; fi

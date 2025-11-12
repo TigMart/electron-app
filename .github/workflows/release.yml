@@ -2,7 +2,7 @@ name: Build and Publish
 on:
   push:
     tags:
-      - 'v*.*.*'     # tag e.g. v1.2.3
+      - 'v*.*.*' # tag e.g. v1.2.3
 
 jobs:
   release:
@@ -28,7 +28,7 @@ jobs:
 
       - name: Publish artifacts
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }} 
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then pnpm exec electron-builder --win --publish always; fi

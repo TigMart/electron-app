@@ -1,0 +1,26 @@
+{
+  "Navigation": {
+    "Dashboard": "Dashboard",
+    "Contracts": "Contracts",
+    "Files": "Files"
+  },
+  "CheckForUpdates": {
+    "tooltip": "Check for updates",
+    "checking": "Checking for updates...",
+    "available": "Update available!",
+    "downloaded": "Update ready to install",
+    "error": "Failed to check for updates",
+    "upToDate": "You are up to date",
+    "checkingDesc": "Please wait while we check for updates...",
+    "availableDesc": "A new version is available and will be downloaded automatically.",
+    "downloadedDesc": "Update has been downloaded successfully. Restart the application to install the new version.",
+    "errorDesc": "Unable to check for updates. Please try again later.",
+    "idleDesc": "Click the button to check for available updates.",
+    "searching": "Searching for updates...",
+    "downloading": "Downloading update...",
+    "readyToInstall": "Update ready to install",
+    "restartPrompt": "The application will automatically update when you restart it.",
+    "updateError": "Update check failed",
+    "checkNow": "Check for Updates"
+  }
+}

@@ -4,6 +4,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import electronLog from 'electron-log'
+import { setupFileManagerHandlers } from './fileManager'
 
 const log = (() => {
   try {
@@ -122,6 +123,9 @@ app.whenReady().then(() => {
     const result = await autoUpdater.checkForUpdates()
     return { version: result?.updateInfo?.version ?? null }
   })
+
+  // Setup file manager handlers
+  setupFileManagerHandlers()
 
   createWindow()
 

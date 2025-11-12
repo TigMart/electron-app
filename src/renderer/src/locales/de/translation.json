@@ -1,0 +1,26 @@
+{
+  "Navigation": {
+    "Dashboard": "Instrumententafel",
+    "Contracts": "Verträge",
+    "Files": "Dateien"
+  },
+  "CheckForUpdates": {
+    "tooltip": "Nach Updates suchen",
+    "checking": "Suche nach Updates...",
+    "available": "Update verfügbar!",
+    "downloaded": "Update bereit zur Installation",
+    "error": "Fehler beim Suchen nach Updates",
+    "upToDate": "Sie sind auf dem neuesten Stand",
+    "checkingDesc": "Bitte warten Sie, während wir nach Updates suchen...",
+    "availableDesc": "Eine neue Version ist verfügbar und wird automatisch heruntergeladen.",
+    "downloadedDesc": "Update wurde erfolgreich heruntergeladen. Starten Sie die Anwendung neu, um die neue Version zu installieren.",
+    "errorDesc": "Updates können nicht überprüft werden. Bitte versuchen Sie es später erneut.",
+    "idleDesc": "Klicken Sie auf die Schaltfläche, um nach verfügbaren Updates zu suchen.",
+    "searching": "Suche nach Updates...",
+    "downloading": "Update wird heruntergeladen...",
+    "readyToInstall": "Update bereit zur Installation",
+    "restartPrompt": "Die Anwendung wird beim Neustart automatisch aktualisiert.",
+    "updateError": "Update-Prüfung fehlgeschlagen",
+    "checkNow": "Nach Updates suchen"
+  }
+}

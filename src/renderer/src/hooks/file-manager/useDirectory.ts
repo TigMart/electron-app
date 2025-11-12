@@ -51,14 +51,8 @@ export function useDirectory(currentPath: string | null, options: UseDirectoryOp
 
   useEffect(() => {
     refresh()
-  }, [
-    currentPath,
-    options.showHidden,
-    options.sortBy,
-    options.sortDirection,
-    options.searchQuery,
-    refresh
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPath, options.showHidden, options.sortBy, options.sortDirection, options.searchQuery])
 
   return { files, loading, error, refresh }
 }

@@ -54,9 +54,9 @@ function createWindow(): void {
 function setupAutoUpdate(): void {
   if (log) autoUpdater.logger = log
   // For private GitHub releases, uncomment and pass a token via env:
-  // autoUpdater.requestHeaders = {
-  //   Authorization: `token ${process.env.GH_TOKEN ?? ''}`
-  // }
+  autoUpdater.requestHeaders = {
+    Authorization: `token ${process.env.GH_TOKEN ?? ''}`
+  }
 
   autoUpdater.on('checking-for-update', () => {
     mainWindow?.webContents.send('updater:status', { state: 'checking' })

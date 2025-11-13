@@ -5,9 +5,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '../ui/dialog'
-import { Button } from '../ui/button'
-import type { RenameConflict, ConflictResolution } from '../../types/fileManager'
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import type { RenameConflict, ConflictResolution } from '@/types/fileManager'
 
 interface ConflictDialogProps {
   conflict: RenameConflict | null

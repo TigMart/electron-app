@@ -83,6 +83,7 @@ export interface UploadFile {
   path: string
   size: number
   type: string
+  file?: File // Optional File object when path is not available
 }
 
 export interface UploadOptions {
@@ -134,6 +135,7 @@ export interface FileManagerAPI {
   copy: (sourcePaths: string[], destPath: string) => Promise<void>
   move: (sourcePaths: string[], destPath: string) => Promise<void>
   upload: (files: UploadFile[], destPath: string, options?: UploadOptions) => Promise<UploadResult>
+  saveTempFile: (fileName: string, buffer: Uint8Array) => Promise<string>
 
   // System operations
   openInExplorer: (path: string) => Promise<void>

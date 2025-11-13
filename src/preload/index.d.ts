@@ -60,6 +60,7 @@ declare global {
       getParentPath: (path: string) => Promise<string>
       onProgress: (callback: (operation: FileOperation) => void) => () => void
       onUploadProgress: (callback: (progress: UploadProgress) => void) => () => void
+      saveTempFile: (fileName: string, buffer: Uint8Array) => Promise<string>
     }
   }
 }

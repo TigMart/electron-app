@@ -1,9 +1,11 @@
 # File Manager V2 - Step-by-Step Implementation Guide
 
 ## 🎯 Purpose
+
 This guide provides exact steps to implement the File Manager V2 enhancements in your Electron-Vite project.
 
 ## ✅ Prerequisites (Already Complete)
+
 - [x] TypeScript types updated (`src/renderer/src/types/fileManager.ts`)
 - [x] IPC contracts extended (`src/preload/index.ts`, `src/preload/index.d.ts`)
 - [x] Existing file manager working
@@ -20,15 +22,18 @@ Add these helper functions before `setupFileManagerHandlers()`:
 /**
  * Validate filename for rename/create operations
  */
-function validateFileNameSync(name: string, oldName?: string): Array<{
+function validateFileNameSync(
+  name: string,
+  oldName?: string
+): Array<{
   field: string
   code: string
   message: string
 }> {
-  const errors: Array<{field: string; code: string; message: string}> = []
-  
+  const errors: Array<{ field: string; code: string; message: string }> = []
+
   const trimmed = name.trim()
-  
+
   // Empty check
   if (!trimmed) {
     errors.push({
@@ -38,7 +43,7 @@ function validateFileNameSync(name: string, oldName?: string): Array<{
     })
     return errors
   }
-  
+
   // Path separator check
   if (trimmed.includes('/') || trimmed.includes('\\')) {
     errors.push({
@@ -47,7 +52,7 @@ function validateFileNameSync(name: string, oldName?: string): Array<{
       message: 'Filename cannot contain / or \\'
     })
   }
-  
+
   // Windows invalid chars
   if (process.platform === 'win32') {
     const invalidChars = ['<', '>', ':', '"', '|', '?', '*']
@@ -62,7 +67,7 @@ function validateFileNameSync(name: string, oldName?: string): Array<{
       }
     }
   }
-  
+
   // Length check
   if (trimmed.length > 255) {
     errors.push({
@@ -71,7 +76,7 @@ function validateFileNameSync(name: string, oldName?: string): Array<{
       message: 'Filename too long (max 255 characters)'
     })
   }
-  
+
   // Extension change warning (if oldName provided)
   if (oldName) {
     const oldExt = path.extname(oldName)
@@ -84,18 +89,22 @@ function validateFileNameSync(name: string, oldName?: string): Array<{
       })
     }
   }
-  
+
   return errors
 }
 
 /**
  * Generate unique filename if conflict exists
  */
-async function generateUniqueFileName(dirPath: string, baseName: string, ext: string): Promise<string> {
+async function generateUniqueFileName(
+  dirPath: string,
+  baseName: string,
+  ext: string
+): Promise<string> {
   let counter = 1
   let newName = `${baseName}${ext}`
   let fullPath = path.join(dirPath, newName)
-  
+
   while (true) {
     try {
       await fs.access(fullPath)
@@ -123,204 +132,204 @@ function isAllowedFileType(filename: string): boolean {
 Then add these new IPC handlers inside `setupFileManagerHandlers()`:
 
 ```typescript
-  // Validate filename
-  ipcMain.handle('fileManager:validateFileName', async (_event, name: string, oldName?: string) => {
-    return validateFileNameSync(name, oldName)
-  })
+// Validate filename
+ipcMain.handle('fileManager:validateFileName', async (_event, name: string, oldName?: string) => {
+  return validateFileNameSync(name, oldName)
+})
 
-  // Enhanced rename with conflict detection
-  ipcMain.handle(
-    'fileManager:rename',
-    async (event, oldPath: string, newName: string, options?: { preserveExtension?: boolean }) => {
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
+// Enhanced rename with conflict detection
+ipcMain.handle(
+  'fileManager:rename',
+  async (event, oldPath: string, newName: string, options?: { preserveExtension?: boolean }) => {
+    const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+    const rootPath = windowId ? rootPaths.get(windowId) : null
 
-      if (!rootPath) {
-        throw new Error('No root folder selected')
-      }
+    if (!rootPath) {
+      throw new Error('No root folder selected')
+    }
 
-      const validatedOldPath = validatePath(rootPath, oldPath)
-      const oldName = path.basename(validatedOldPath)
-      
-      // Preserve extension by default
-      let finalNewName = newName.trim()
-      if (options?.preserveExtension !== false) {
-        const oldExt = path.extname(oldName)
-        const newExt = path.extname(finalNewName)
-        if (oldExt && !newExt) {
-          finalNewName = finalNewName + oldExt
-        }
-      }
+    const validatedOldPath = validatePath(rootPath, oldPath)
+    const oldName = path.basename(validatedOldPath)
 
-      // Validate new name
-      const errors = validateFileNameSync(finalNewName, oldName)
-      if (errors.some(e => e.code !== 'EXTENSION_CHANGE')) {
-        throw new Error(errors[0].message)
-      }
-
-      const parentDir = path.dirname(validatedOldPath)
-      const newPath = path.join(parentDir, finalNewName)
-      validatePath(rootPath, newPath)
-
-      // Check for conflict
-      try {
-        await fs.access(newPath)
-        // File exists - return conflict
-        return {
-          success: false,
-          conflict: {
-            exists: true,
-            oldName,
-            newName: finalNewName,
-            path: newPath
-          }
-        }
-      } catch {
-        // No conflict, proceed with rename
-        await fs.rename(validatedOldPath, newPath)
-        return {
-          success: true,
-          finalName: finalNewName
-        }
+    // Preserve extension by default
+    let finalNewName = newName.trim()
+    if (options?.preserveExtension !== false) {
+      const oldExt = path.extname(oldName)
+      const newExt = path.extname(finalNewName)
+      if (oldExt && !newExt) {
+        finalNewName = finalNewName + oldExt
       }
     }
-  )
 
-  // Resolve rename/upload conflict
-  ipcMain.handle(
-    'fileManager:resolveConflict',
-    async (event, dirPath: string, fileName: string, resolution: string) => {
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
-
-      if (!rootPath) {
-        throw new Error('No root folder selected')
-      }
-
-      const validatedDir = validatePath(rootPath, dirPath)
-
-      if (resolution === 'cancel') {
-        throw new Error('Operation cancelled by user')
-      }
-
-      if (resolution === 'overwrite') {
-        return fileName
-      }
-
-      if (resolution === 'keep-both') {
-        const ext = path.extname(fileName)
-        const baseName = path.basename(fileName, ext)
-        return await generateUniqueFileName(validatedDir, baseName, ext)
-      }
-
-      throw new Error(`Unknown resolution: ${resolution}`)
+    // Validate new name
+    const errors = validateFileNameSync(finalNewName, oldName)
+    if (errors.some((e) => e.code !== 'EXTENSION_CHANGE')) {
+      throw new Error(errors[0].message)
     }
-  )
 
-  // Upload files from OS
-  ipcMain.handle(
-    'fileManager:upload',
-    async (
-      event,
-      files: Array<{ name: string; path: string; size: number; type: string }>,
-      destPath: string,
-      options?: { allowedTypes?: string[]; onConflict?: string }
-    ) => {
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
+    const parentDir = path.dirname(validatedOldPath)
+    const newPath = path.join(parentDir, finalNewName)
+    validatePath(rootPath, newPath)
 
-      if (!rootPath) {
-        throw new Error('No root folder selected')
+    // Check for conflict
+    try {
+      await fs.access(newPath)
+      // File exists - return conflict
+      return {
+        success: false,
+        conflict: {
+          exists: true,
+          oldName,
+          newName: finalNewName,
+          path: newPath
+        }
       }
-
-      const validatedDest = validatePath(rootPath, destPath)
-
-      const results = {
+    } catch {
+      // No conflict, proceed with rename
+      await fs.rename(validatedOldPath, newPath)
+      return {
         success: true,
-        uploaded: 0,
-        skipped: 0,
-        failed: 0,
-        details: [] as Array<{
-          name: string
-          status: 'success' | 'skipped' | 'error'
-          error?: string
-          finalPath?: string
-        }>
+        finalName: finalNewName
       }
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-
-        // Validate file type
-        if (!isAllowedFileType(file.name)) {
-          results.skipped++
-          results.details.push({
-            name: file.name,
-            status: 'skipped',
-            error: 'File type not allowed'
-          })
-          continue
-        }
-
-        try {
-          let finalName = file.name
-          const targetPath = path.join(validatedDest, finalName)
-
-          // Check for conflict
-          try {
-            await fs.access(targetPath)
-            // Conflict exists
-            if (options?.onConflict === 'skip') {
-              results.skipped++
-              results.details.push({
-                name: file.name,
-                status: 'skipped',
-                error: 'File already exists'
-              })
-              continue
-            } else if (options?.onConflict === 'keep-both') {
-              const ext = path.extname(finalName)
-              const baseName = path.basename(finalName, ext)
-              finalName = await generateUniqueFileName(validatedDest, baseName, ext)
-            }
-            // 'overwrite' - just proceed
-          } catch {
-            // No conflict
-          }
-
-          // Copy file
-          const finalPath = path.join(validatedDest, finalName)
-          await fs.copyFile(file.path, finalPath)
-
-          // Emit progress
-          event.sender.send('fileManager:uploadProgress', {
-            fileIndex: i,
-            fileName: file.name,
-            bytesTransferred: file.size,
-            totalBytes: file.size,
-            percent: 100,
-            status: 'complete'
-          })
-
-          results.uploaded++
-          results.details.push({
-            name: file.name,
-            status: 'success',
-            finalPath
-          })
-        } catch (error: any) {
-          results.failed++
-          results.details.push({
-            name: file.name,
-            status: 'error',
-            error: error.message
-          })
-        }
-      }
-
-      return results
     }
-  )
+  }
+)
+
+// Resolve rename/upload conflict
+ipcMain.handle(
+  'fileManager:resolveConflict',
+  async (event, dirPath: string, fileName: string, resolution: string) => {
+    const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+    const rootPath = windowId ? rootPaths.get(windowId) : null
+
+    if (!rootPath) {
+      throw new Error('No root folder selected')
+    }
+
+    const validatedDir = validatePath(rootPath, dirPath)
+
+    if (resolution === 'cancel') {
+      throw new Error('Operation cancelled by user')
+    }
+
+    if (resolution === 'overwrite') {
+      return fileName
+    }
+
+    if (resolution === 'keep-both') {
+      const ext = path.extname(fileName)
+      const baseName = path.basename(fileName, ext)
+      return await generateUniqueFileName(validatedDir, baseName, ext)
+    }
+
+    throw new Error(`Unknown resolution: ${resolution}`)
+  }
+)
+
+// Upload files from OS
+ipcMain.handle(
+  'fileManager:upload',
+  async (
+    event,
+    files: Array<{ name: string; path: string; size: number; type: string }>,
+    destPath: string,
+    options?: { allowedTypes?: string[]; onConflict?: string }
+  ) => {
+    const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+    const rootPath = windowId ? rootPaths.get(windowId) : null
+
+    if (!rootPath) {
+      throw new Error('No root folder selected')
+    }
+
+    const validatedDest = validatePath(rootPath, destPath)
+
+    const results = {
+      success: true,
+      uploaded: 0,
+      skipped: 0,
+      failed: 0,
+      details: [] as Array<{
+        name: string
+        status: 'success' | 'skipped' | 'error'
+        error?: string
+        finalPath?: string
+      }>
+    }
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+
+      // Validate file type
+      if (!isAllowedFileType(file.name)) {
+        results.skipped++
+        results.details.push({
+          name: file.name,
+          status: 'skipped',
+          error: 'File type not allowed'
+        })
+        continue
+      }
+
+      try {
+        let finalName = file.name
+        const targetPath = path.join(validatedDest, finalName)
+
+        // Check for conflict
+        try {
+          await fs.access(targetPath)
+          // Conflict exists
+          if (options?.onConflict === 'skip') {
+            results.skipped++
+            results.details.push({
+              name: file.name,
+              status: 'skipped',
+              error: 'File already exists'
+            })
+            continue
+          } else if (options?.onConflict === 'keep-both') {
+            const ext = path.extname(finalName)
+            const baseName = path.basename(finalName, ext)
+            finalName = await generateUniqueFileName(validatedDest, baseName, ext)
+          }
+          // 'overwrite' - just proceed
+        } catch {
+          // No conflict
+        }
+
+        // Copy file
+        const finalPath = path.join(validatedDest, finalName)
+        await fs.copyFile(file.path, finalPath)
+
+        // Emit progress
+        event.sender.send('fileManager:uploadProgress', {
+          fileIndex: i,
+          fileName: file.name,
+          bytesTransferred: file.size,
+          totalBytes: file.size,
+          percent: 100,
+          status: 'complete'
+        })
+
+        results.uploaded++
+        results.details.push({
+          name: file.name,
+          status: 'success',
+          finalPath
+        })
+      } catch (error: any) {
+        results.failed++
+        results.details.push({
+          name: file.name,
+          status: 'error',
+          error: error.message
+        })
+      }
+    }
+
+    return results
+  }
+)
 ```
 
 **Note**: The existing `rename` handler will be replaced by the enhanced version above.
@@ -420,7 +429,11 @@ interface UseFileOpsProps {
 
 export function useFileOps({ currentPath, onRefresh, onError, onSuccess }: UseFileOpsProps) {
   const rename = useCallback(
-    async (oldPath: string, newName: string, onConflict?: (conflict: any) => Promise<ConflictResolution>): Promise<boolean> => {
+    async (
+      oldPath: string,
+      newName: string,
+      onConflict?: (conflict: any) => Promise<ConflictResolution>
+    ): Promise<boolean> => {
       try {
         // Validate filename first
         const errors = await window.fileManager.validateFileName(newName, oldPath)
@@ -439,7 +452,9 @@ export function useFileOps({ currentPath, onRefresh, onError, onSuccess }: UseFi
         }
 
         // Attempt rename
-        const result = await window.fileManager.rename(oldPath, newName, { preserveExtension: true })
+        const result = await window.fileManager.rename(oldPath, newName, {
+          preserveExtension: true
+        })
 
         if (result.conflict && onConflict) {
           // Handle conflict
@@ -680,6 +695,7 @@ This is the simplified orchestrator version. The full modular component implemen
 **File**: `src/renderer/src/pages/FilesPage.tsx` (Enhanced version)
 
 Add these imports at the top:
+
 ```typescript
 import { useToast } from '@/hooks/file-manager/useToast'
 import { useDirectory } from '@/hooks/file-manager/useDirectory'
@@ -693,6 +709,7 @@ Replace state and operations with hooks (example integration in next step).
 ### Step 10: Test the Implementation
 
 1. **Build and run**:
+
    ```bash
    pnpm dev
    ```
@@ -723,15 +740,19 @@ pnpm run build
 ## 🔍 Troubleshooting
 
 ### Issue: "Cannot find module '@/hooks/file-manager/useToast'"
+
 **Solution**: Ensure TypeScript path alias is configured in `tsconfig.json` and `electron.vite.config.ts`
 
 ### Issue: "window.fileManager.validateFileName is not a function"
+
 **Solution**: Restart the dev server after adding new IPC handlers
 
 ### Issue: Upload shows "File type not allowed" for valid files
+
 **Solution**: Check that `isAllowedFileType()` includes the file extension
 
 ### Issue: Drag-drop doesn't work
+
 **Solution**: Ensure `handleDragOver` prevents default and calls `e.preventDefault()`
 
 ## 📝 Next Steps After Basic Implementation

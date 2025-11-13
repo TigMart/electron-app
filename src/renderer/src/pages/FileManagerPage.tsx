@@ -3,6 +3,7 @@ import { Button } from '../components/ui/button'
 import { IconFolderOpen } from '@tabler/icons-react'
 import { Toaster } from 'sonner'
 import type { FileItem, BreadcrumbItem } from '../types/fileManager'
+import { logger } from '../utils/logger'
 
 // Hooks
 import { useDirectory } from '../hooks/file-manager/useDirectory'
@@ -16,6 +17,10 @@ import { Breadcrumbs } from '../components/file-manager/Breadcrumbs'
 import { FileList } from '../components/file-manager/FileList'
 import { DropZone } from '../components/file-manager/DropZone'
 import { ConflictDialog } from '../components/file-manager/ConflictDialog'
+import { NewFolderDialog } from '../components/file-manager/NewFolderDialog'
+import { DeleteConfirmDialog } from '../components/file-manager/DeleteConfirmDialog'
+import { AlertDialog } from '../components/file-manager/AlertDialog'
+import { UploadProgressDialog } from '../components/file-manager/UploadProgressDialog'
 
 export default function FileManagerPage() {
   // State
@@ -27,6 +32,21 @@ export default function FileManagerPage() {
     paths: string[]
     operation: 'copy' | 'move'
   } | null>(null)
+  const [isPasting, setIsPasting] = useState(false)
+  const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false)
+  const [dialogKey, setDialogKey] = useState(0)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [filesToDelete, setFilesToDelete] = useState<string[]>([])
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false)
+  const [alertInfo, setAlertInfo] = useState<{
+    title: string
+    message: string
+    details?: string
+  }>({
+    title: '',
+    message: '',
+    details: ''
+  })
 
   const toast = useToast()
 
@@ -43,15 +63,32 @@ export default function FileManagerPage() {
     useFileOps(refresh)
 
   // Drag and drop
-  const { isDragging, isUploading, uploadProgress, handleDragOver, handleDragLeave, handleDrop } =
-    useDnD(currentPath, refresh)
+  const {
+    isDragging,
+    isUploading,
+    uploadProgress,
+    handleDragEnter,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop
+  } = useDnD(currentPath, refresh)
 
   // Select folder
   const selectFolder = async () => {
-    const folder = await window.fileManager.selectFolder()
-    if (folder) {
-      setRootPath(folder)
-      setCurrentPath(folder)
+    logger.debug('selectFolder called')
+    try {
+      const folder = await window.fileManager.selectFolder()
+      logger.debug('Selected folder:', folder)
+      if (folder) {
+        setRootPath(folder)
+        setCurrentPath(folder)
+        logger.debug('Root and current path set to:', folder)
+      } else {
+        logger.debug('No folder selected (user cancelled)')
+      }
+    } catch (error) {
+      console.error('[DEBUG] Error selecting folder:', error)
+      toast.error('Failed to select folder: ' + (error as Error).message)
     }
   }
 
@@ -107,22 +144,27 @@ export default function FileManagerPage() {
 
   // Toolbar actions
   const handleNewFolder = () => {
-    const folderName = prompt('Enter folder name:')
-    if (folderName && currentPath) {
-      createFolder(currentPath, folderName)
-    }
+    logger.debug('handleNewFolder called')
+    setDialogKey((prev) => prev + 1)
+    setNewFolderDialogOpen(true)
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    logger.debug('handleDelete called, selectedFiles.size:', selectedFiles.size)
     if (selectedFiles.size === 0) return
-    const confirmed = confirm(`Delete ${selectedFiles.size} item(s)?`)
-    if (confirmed) {
-      await remove(Array.from(selectedFiles), true)
-      setSelectedFiles(new Set())
-    }
+    setFilesToDelete(Array.from(selectedFiles))
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    logger.debug('Calling remove for:', filesToDelete)
+    await remove(filesToDelete, true)
+    setSelectedFiles(new Set())
+    setFilesToDelete([])
   }
 
   const handleCopy = () => {
+    logger.debug('handleCopy called, selectedFiles.size:', selectedFiles.size)
     if (selectedFiles.size > 0) {
       setClipboard({ paths: Array.from(selectedFiles), operation: 'copy' })
       toast.info(`${selectedFiles.size} item(s) copied`)
@@ -130,6 +172,7 @@ export default function FileManagerPage() {
   }
 
   const handleCut = () => {
+    logger.debug('handleCut called, selectedFiles.size:', selectedFiles.size)
     if (selectedFiles.size > 0) {
       setClipboard({ paths: Array.from(selectedFiles), operation: 'move' })
       toast.info(`${selectedFiles.size} item(s) cut`)
@@ -137,16 +180,54 @@ export default function FileManagerPage() {
   }
 
   const handlePaste = async () => {
-    if (!clipboard || !currentPath) return
-
-    if (clipboard.operation === 'copy') {
-      await copy(clipboard.paths, currentPath)
-    } else {
-      await move(clipboard.paths, currentPath)
+    if (isPasting) {
+      logger.debug('Already pasting, ignoring duplicate call')
+      return
     }
 
-    setClipboard(null)
-    setSelectedFiles(new Set())
+    if (!clipboard || !currentPath) {
+      logger.debug('No clipboard or currentPath, aborting')
+      return
+    }
+
+    try {
+      setIsPasting(true)
+
+      // Only validate: Don't paste a folder into itself (subfolder check)
+      for (const sourcePath of clipboard.paths) {
+        const normalizedSource = sourcePath.replace(/\\/g, '/').toLowerCase()
+        const normalizedDest = currentPath.replace(/\\/g, '/').toLowerCase()
+
+        // Check if destination is inside the source folder
+        if (
+          normalizedDest.startsWith(normalizedSource + '/') ||
+          normalizedDest === normalizedSource
+        ) {
+          const folderName = sourcePath.split(/[\\/]/).pop() || sourcePath
+
+          setAlertInfo({
+            title: '1 Interrupted Action',
+            message: 'The destination folder is a subfolder of the source folder.',
+            details: folderName
+          })
+          setAlertDialogOpen(true)
+          logger.debug('Prevented paste into subfolder')
+          return
+        }
+      }
+
+      const clipboardCopy = { ...clipboard }
+      setClipboard(null)
+      setSelectedFiles(new Set())
+
+      if (clipboardCopy.operation === 'copy') {
+        await copy(clipboardCopy.paths, currentPath)
+      } else {
+        await move(clipboardCopy.paths, currentPath)
+      }
+    } finally {
+      setIsPasting(false)
+    }
   }
 
   // No folder selected
@@ -190,6 +271,7 @@ export default function FileManagerPage() {
         onCopy={handleCopy}
         onCut={handleCut}
         onPaste={handlePaste}
+        onRefresh={refresh}
       />
 
       {/* File List with Drag & Drop */}
@@ -197,6 +279,7 @@ export default function FileManagerPage() {
         isDragging={isDragging}
         isUploading={isUploading}
         uploadProgress={uploadProgress}
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -212,6 +295,17 @@ export default function FileManagerPage() {
             onFileSelect={handleFileSelect}
             onFileRename={rename}
             onFileOpen={handleFileOpen}
+            onFileDelete={(filePath) => remove([filePath], true)}
+            onFileCopy={(filePath) => {
+              setClipboard({ paths: [filePath], operation: 'copy' })
+              toast.info('1 item copied')
+            }}
+            onFileCut={(filePath) => {
+              setClipboard({ paths: [filePath], operation: 'move' })
+              toast.info('1 item cut')
+            }}
+            onFileOpenExternal={(filePath) => window.fileManager.openFile(filePath)}
+            onFileOpenInExplorer={(filePath) => window.fileManager.openInExplorer(filePath)}
             onNavigateUp={goToParent}
             canNavigateUp={currentPath !== rootPath}
           />
@@ -220,6 +314,38 @@ export default function FileManagerPage() {
 
       {/* Conflict Dialog */}
       <ConflictDialog conflict={renameConflict} onResolve={resolveConflict} />
+
+      {/* New Folder Dialog */}
+      <NewFolderDialog
+        key={dialogKey}
+        open={newFolderDialogOpen}
+        onOpenChange={setNewFolderDialogOpen}
+        onConfirm={async (folderName) => {
+          if (currentPath) {
+            await createFolder(currentPath, folderName)
+          }
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        itemCount={filesToDelete.length}
+      />
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        open={alertDialogOpen}
+        onOpenChange={setAlertDialogOpen}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        details={alertInfo.details}
+      />
+
+      {/* Upload Progress Dialog */}
+      <UploadProgressDialog open={isUploading} uploadProgress={uploadProgress} />
     </div>
   )
 }

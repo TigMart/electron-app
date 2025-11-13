@@ -5,7 +5,7 @@
  * Secure filesystem operations with path validation and root scoping
  */
 
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
+import { ipcMain, dialog, shell, BrowserWindow, app } from 'electron'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -209,211 +209,545 @@ function isAllowedFileType(fileName: string): boolean {
  * Setup all file manager IPC handlers
  */
 export function setupFileManagerHandlers(): void {
-  // Select folder dialog
-  ipcMain.handle('fileManager:selectFolder', async (event) => {
-    const window = BrowserWindow.fromWebContents(event.sender)
+  try {
+    console.log('[FileManager] Setting up IPC handlers...')
 
-    if (!window) {
-      throw new Error('Could not find browser window')
-    }
+    // Select folder dialog
+    ipcMain.handle('fileManager:selectFolder', async (event) => {
+      console.log('[FileManager] selectFolder handler called')
+      const window = BrowserWindow.fromWebContents(event.sender)
 
-    const result = await dialog.showOpenDialog(window, {
-      properties: ['openDirectory', 'createDirectory'],
-      title: 'Select Folder'
+      if (!window) {
+        throw new Error('Could not find browser window')
+      }
+
+      const result = await dialog.showOpenDialog(window, {
+        properties: ['openDirectory', 'createDirectory'],
+        title: 'Select Folder'
+      })
+
+      if (result.canceled || !result.filePaths[0]) {
+        return null
+      }
+
+      const selectedPath = result.filePaths[0]
+      const windowId = window.id
+
+      rootPaths.set(windowId, selectedPath)
+      console.log('[FileManager] Root path set:', selectedPath, 'for window:', windowId)
+
+      return selectedPath
     })
 
-    if (result.canceled || !result.filePaths[0]) {
-      return null
-    }
+    console.log('[FileManager] selectFolder handler registered')
 
-    const selectedPath = result.filePaths[0]
-    const windowId = window.id
+    // List files in directory
+    ipcMain.handle(
+      'fileManager:listFiles',
+      async (event, folderPath: string, options: ListOptions) => {
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
 
-    rootPaths.set(windowId, selectedPath)
-
-    return selectedPath
-  })
-
-  // List files in directory
-  ipcMain.handle(
-    'fileManager:listFiles',
-    async (event, folderPath: string, options: ListOptions) => {
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
-
-      if (!rootPath) {
-        throw new Error('No root folder selected')
-      }
-
-      const validatedPath = validatePath(rootPath, folderPath)
-
-      const entries = await fs.readdir(validatedPath, { withFileTypes: true })
-      const items: FileItem[] = []
-
-      for (const entry of entries) {
-        const entryPath = path.join(validatedPath, entry.name)
-        const hidden = isHidden(entry.name)
-
-        // Skip hidden files if not showing them
-        if (hidden && !options.showHidden) continue
-
-        // Search filter
-        if (
-          options.searchQuery &&
-          !entry.name.toLowerCase().includes(options.searchQuery.toLowerCase())
-        ) {
-          continue
+        if (!rootPath) {
+          throw new Error('No root folder selected')
         }
 
+        const validatedPath = validatePath(rootPath, folderPath)
+
+        const entries = await fs.readdir(validatedPath, { withFileTypes: true })
+        const items: FileItem[] = []
+
+        for (const entry of entries) {
+          const entryPath = path.join(validatedPath, entry.name)
+          const hidden = isHidden(entry.name)
+
+          // Skip hidden files if not showing them
+          if (hidden && !options.showHidden) continue
+
+          // Search filter
+          if (
+            options.searchQuery &&
+            !entry.name.toLowerCase().includes(options.searchQuery.toLowerCase())
+          ) {
+            continue
+          }
+
+          try {
+            const stats = await fs.stat(entryPath)
+
+            const item: FileItem = {
+              name: entry.name,
+              path: entryPath,
+              relativePath: path.relative(rootPath, entryPath),
+              type: entry.isDirectory() ? 'directory' : 'file',
+              size: stats.size,
+              modified: stats.mtimeMs,
+              isHidden: hidden,
+              extension: entry.isFile() ? getExtension(entry.name) : undefined
+            }
+
+            items.push(item)
+          } catch (error) {
+            // Skip files we can't read
+            console.error(`Error reading ${entryPath}:`, error)
+          }
+        }
+
+        // Sort items
+        if (options.sortBy) {
+          items.sort((a, b) => {
+            let aVal: any = a[options.sortBy!]
+            let bVal: any = b[options.sortBy!]
+
+            // Directories first
+            if (a.type === 'directory' && b.type === 'file') return -1
+            if (a.type === 'file' && b.type === 'directory') return 1
+
+            if (options.sortBy === 'name') {
+              aVal = aVal.toLowerCase()
+              bVal = bVal.toLowerCase()
+            }
+
+            const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+            return options.sortDirection === 'desc' ? -comparison : comparison
+          })
+        }
+
+        return items
+      }
+    )
+
+    // Create folder
+    ipcMain.handle(
+      'fileManager:createFolder',
+      async (event, parentPath: string, folderName: string) => {
+        console.log('[DEBUG] IPC createFolder called:', parentPath, folderName)
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
+
+        if (!rootPath) {
+          console.error('[DEBUG] No root path for window:', windowId)
+          throw new Error('No root folder selected')
+        }
+
+        // Validate folder name
+        if (!folderName || folderName.includes('/') || folderName.includes('\\')) {
+          console.error('[DEBUG] Invalid folder name:', folderName)
+          throw new Error('Invalid folder name')
+        }
+
+        const validatedParent = validatePath(rootPath, parentPath)
+        const newFolderPath = path.join(validatedParent, folderName)
+        console.log('[DEBUG] Creating folder at:', newFolderPath)
+
+        // Check if already exists
         try {
-          const stats = await fs.stat(entryPath)
-
-          const item: FileItem = {
-            name: entry.name,
-            path: entryPath,
-            relativePath: path.relative(rootPath, entryPath),
-            type: entry.isDirectory() ? 'directory' : 'file',
-            size: stats.size,
-            modified: stats.mtimeMs,
-            isHidden: hidden,
-            extension: entry.isFile() ? getExtension(entry.name) : undefined
-          }
-
-          items.push(item)
-        } catch (error) {
-          // Skip files we can't read
-          console.error(`Error reading ${entryPath}:`, error)
+          await fs.access(newFolderPath)
+          console.error('[DEBUG] Folder already exists:', newFolderPath)
+          throw new Error('Folder already exists')
+        } catch (error: any) {
+          if (error.code !== 'ENOENT') throw error
         }
+
+        await fs.mkdir(newFolderPath, { recursive: false })
+        console.log('[DEBUG] Folder created successfully')
       }
+    )
 
-      // Sort items
-      if (options.sortBy) {
-        items.sort((a, b) => {
-          let aVal: any = a[options.sortBy!]
-          let bVal: any = b[options.sortBy!]
-
-          // Directories first
-          if (a.type === 'directory' && b.type === 'file') return -1
-          if (a.type === 'file' && b.type === 'directory') return 1
-
-          if (options.sortBy === 'name') {
-            aVal = aVal.toLowerCase()
-            bVal = bVal.toLowerCase()
-          }
-
-          const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
-          return options.sortDirection === 'desc' ? -comparison : comparison
-        })
+    // Validate filename
+    ipcMain.handle(
+      'fileManager:validateFileName',
+      async (_event, name: string, oldName?: string) => {
+        return validateFileNameSync(name, oldName)
       }
+    )
 
-      return items
-    }
-  )
+    // Rename file/folder (enhanced with conflict detection)
+    ipcMain.handle(
+      'fileManager:rename',
+      async (event, oldPath: string, newName: string, options?: any) => {
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
 
-  // Create folder
-  ipcMain.handle(
-    'fileManager:createFolder',
-    async (event, parentPath: string, folderName: string) => {
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
-
-      if (!rootPath) {
-        throw new Error('No root folder selected')
-      }
-
-      // Validate folder name
-      if (!folderName || folderName.includes('/') || folderName.includes('\\')) {
-        throw new Error('Invalid folder name')
-      }
-
-      const validatedParent = validatePath(rootPath, parentPath)
-      const newFolderPath = path.join(validatedParent, folderName)
-
-      // Check if already exists
-      try {
-        await fs.access(newFolderPath)
-        throw new Error('Folder already exists')
-      } catch (error: any) {
-        if (error.code !== 'ENOENT') throw error
-      }
-
-      await fs.mkdir(newFolderPath, { recursive: false })
-    }
-  )
-
-  // Validate filename
-  ipcMain.handle('fileManager:validateFileName', async (_event, name: string, oldName?: string) => {
-    return validateFileNameSync(name, oldName)
-  })
-
-  // Rename file/folder (enhanced with conflict detection)
-  ipcMain.handle(
-    'fileManager:rename',
-    async (event, oldPath: string, newName: string, options?: any) => {
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
-
-      if (!rootPath) {
-        throw new Error('No root folder selected')
-      }
-
-      const validatedOldPath = validatePath(rootPath, oldPath)
-      const oldFileName = path.basename(validatedOldPath)
-
-      // Validate new name
-      const errors = validateFileNameSync(newName, oldFileName)
-      if (errors.length > 0) {
-        throw new Error(errors[0].message)
-      }
-
-      // Handle extension preservation
-      const preserveExtension = options?.preserveExtension !== false
-      let finalName = newName
-
-      if (preserveExtension) {
-        const oldExt = path.extname(oldFileName)
-        const newExt = path.extname(newName)
-
-        // If new name doesn't have extension but old one does, preserve it
-        if (oldExt && !newExt) {
-          finalName = newName + oldExt
+        if (!rootPath) {
+          throw new Error('No root folder selected')
         }
-      }
 
-      const parentDir = path.dirname(validatedOldPath)
-      const newPath = path.join(parentDir, finalName)
+        const validatedOldPath = validatePath(rootPath, oldPath)
+        const oldFileName = path.basename(validatedOldPath)
 
-      // Ensure new path is within root
-      validatePath(rootPath, newPath)
+        // Validate new name
+        const errors = validateFileNameSync(newName, oldFileName)
+        if (errors.length > 0) {
+          throw new Error(errors[0].message)
+        }
 
-      // Check for conflict
-      try {
-        await fs.access(newPath)
-        // File exists - return conflict
-        return {
-          success: false,
-          conflict: {
-            exists: true,
-            oldName: oldFileName,
-            newName: finalName,
-            path: parentDir
+        // Handle extension preservation
+        const preserveExtension = options?.preserveExtension !== false
+        let finalName = newName
+
+        if (preserveExtension) {
+          const oldExt = path.extname(oldFileName)
+          const newExt = path.extname(newName)
+
+          // If new name doesn't have extension but old one does, preserve it
+          if (oldExt && !newExt) {
+            finalName = newName + oldExt
           }
         }
-      } catch {
-        // File doesn't exist, proceed with rename
-        await fs.rename(validatedOldPath, newPath)
-        return {
+
+        const parentDir = path.dirname(validatedOldPath)
+        const newPath = path.join(parentDir, finalName)
+
+        // Ensure new path is within root
+        validatePath(rootPath, newPath)
+
+        // Check for conflict
+        try {
+          await fs.access(newPath)
+          // File exists - return conflict
+          return {
+            success: false,
+            conflict: {
+              exists: true,
+              oldName: oldFileName,
+              newName: finalName,
+              path: parentDir
+            }
+          }
+        } catch {
+          // File doesn't exist, proceed with rename
+          await fs.rename(validatedOldPath, newPath)
+          return {
+            success: true,
+            finalName
+          }
+        }
+      }
+    )
+
+    // Resolve rename conflict
+    ipcMain.handle(
+      'fileManager:resolveConflict',
+      async (event, targetPath: string, desiredName: string, resolution: string) => {
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
+
+        if (!rootPath) {
+          throw new Error('No root folder selected')
+        }
+
+        const validatedPath = validatePath(rootPath, targetPath)
+
+        if (resolution === 'cancel') {
+          return { success: false, cancelled: true }
+        }
+
+        if (resolution === 'overwrite') {
+          // Delete existing file
+          const destPath = path.join(validatedPath, desiredName)
+          validatePath(rootPath, destPath)
+          try {
+            await fs.unlink(destPath)
+          } catch {
+            // Ignore if doesn't exist
+          }
+          return { success: true, finalName: desiredName }
+        }
+
+        if (resolution === 'keep-both') {
+          // Generate unique name
+          const uniqueName = await generateUniqueFileName(validatedPath, desiredName)
+          return { success: true, finalName: uniqueName }
+        }
+
+        throw new Error('Invalid conflict resolution')
+      }
+    )
+
+    // Save temporary file for uploads
+    ipcMain.handle(
+      'fileManager:saveTempFile',
+      async (_event, fileName: string, buffer: Uint8Array) => {
+        console.log('[DEBUG] Saving temp file:', fileName)
+        const tmpDir = app.getPath('temp')
+        const tempPath = path.join(tmpDir, `electron-upload-${Date.now()}-${fileName}`)
+
+        await fs.writeFile(tempPath, buffer)
+        console.log('[DEBUG] Temp file saved to:', tempPath)
+
+        return tempPath
+      }
+    )
+
+    // Upload files with progress
+    ipcMain.handle(
+      'fileManager:upload',
+      async (event, files: any[], destPath: string, options?: any) => {
+        console.log(
+          '[DEBUG] IPC upload called, files:',
+          files.length,
+          'destPath:',
+          destPath,
+          'options:',
+          options
+        )
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
+
+        if (!rootPath) {
+          console.error('[DEBUG] No root path for window:', windowId)
+          throw new Error('No root folder selected')
+        }
+
+        const validatedDest = validatePath(rootPath, destPath)
+        console.log('[DEBUG] Validated destination:', validatedDest)
+        const results = {
           success: true,
-          finalName
+          uploaded: [] as string[],
+          skipped: [] as string[],
+          failed: [] as Array<{ file: string; error: string }>,
+          details: [] as any[]
+        }
+
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]
+          // Use file.name which is the original name, not the path basename (which might be temp)
+          const fileName = file.name
+          console.log('[DEBUG] Processing file', i + 1, 'of', files.length, ':', fileName)
+          console.log('[DEBUG] File object:', JSON.stringify(file, null, 2))
+
+          // Validate file type if allowlist provided
+          if (options?.allowedTypes !== false && !isAllowedFileType(fileName)) {
+            console.log('[DEBUG] File type not allowed:', fileName)
+            results.skipped.push(fileName)
+            results.details.push({
+              file: fileName,
+              status: 'skipped',
+              reason: 'File type not allowed'
+            })
+            continue
+          }
+
+          try {
+            const targetPath = path.join(validatedDest, fileName)
+            console.log('[DEBUG] Source path:', file.path)
+            console.log('[DEBUG] Target path:', targetPath)
+
+            // Check if source file exists
+            try {
+              await fs.access(file.path)
+              console.log('[DEBUG] Source file exists')
+            } catch {
+              console.error('[DEBUG] Source file does not exist:', file.path)
+              throw new Error(`Source file not found: ${file.path}`)
+            }
+
+            validatePath(rootPath, targetPath)
+
+            // Check for conflict
+            let finalPath = targetPath
+            let finalName = fileName
+            try {
+              await fs.access(targetPath)
+              // File exists - handle conflict
+              const onConflict = options?.onConflict || 'skip'
+
+              if (onConflict === 'skip') {
+                results.skipped.push(fileName)
+                results.details.push({
+                  file: fileName,
+                  status: 'skipped',
+                  reason: 'File already exists'
+                })
+                continue
+              } else if (onConflict === 'keep-both') {
+                finalName = await generateUniqueFileName(validatedDest, fileName)
+                finalPath = path.join(validatedDest, finalName)
+              }
+              // 'overwrite' will just proceed with copy
+            } catch {
+              // File doesn't exist, continue
+            }
+
+            // Copy file with progress events
+            const stats = await fs.stat(file.path)
+            const totalBytes = stats.size
+
+            // Send progress start
+            event.sender.send('fileManager:uploadProgress', {
+              fileIndex: i,
+              fileName,
+              bytesTransferred: 0,
+              totalBytes,
+              percent: 0,
+              status: 'uploading'
+            })
+
+            // Copy file
+            await fs.copyFile(file.path, finalPath)
+
+            // Send progress complete
+            event.sender.send('fileManager:uploadProgress', {
+              fileIndex: i,
+              fileName,
+              bytesTransferred: totalBytes,
+              totalBytes,
+              percent: 100,
+              status: 'complete'
+            })
+
+            results.uploaded.push(finalName)
+            results.details.push({
+              file: fileName,
+              finalName,
+              status: 'uploaded'
+            })
+          } catch (error: any) {
+            results.failed.push({
+              file: fileName,
+              error: error.message
+            })
+            results.details.push({
+              file: fileName,
+              status: 'failed',
+              error: error.message
+            })
+
+            // Send error progress
+            event.sender.send('fileManager:uploadProgress', {
+              fileIndex: i,
+              fileName,
+              status: 'error',
+              error: error.message
+            })
+          }
+        }
+
+        results.success = results.failed.length === 0
+
+        return {
+          success: results.success,
+          uploaded: results.uploaded.length,
+          skipped: results.skipped.length,
+          failed: results.failed.length,
+          details: results.details
         }
       }
-    }
-  )
+    )
 
-  // Resolve rename conflict
-  ipcMain.handle(
-    'fileManager:resolveConflict',
-    async (event, targetPath: string, desiredName: string, resolution: string) => {
+    // Delete files/folders
+    ipcMain.handle(
+      'fileManager:remove',
+      async (event, paths: string[], options: { toTrash: boolean }) => {
+        console.log('[DEBUG] IPC remove called:', paths, options)
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
+
+        if (!rootPath) {
+          console.error('[DEBUG] No root path for window:', windowId)
+          throw new Error('No root folder selected')
+        }
+
+        for (const targetPath of paths) {
+          const validatedPath = validatePath(rootPath, targetPath)
+          console.log('[DEBUG] Removing:', validatedPath, 'toTrash:', options.toTrash)
+
+          if (options.toTrash) {
+            // Use shell.trashItem for safe deletion
+            await shell.trashItem(validatedPath)
+          } else {
+            // Permanent deletion
+            const stats = await fs.stat(validatedPath)
+            if (stats.isDirectory()) {
+              await fs.rm(validatedPath, { recursive: true, force: true })
+            } else {
+              await fs.unlink(validatedPath)
+            }
+          }
+          console.log('[DEBUG] Removed successfully:', validatedPath)
+        }
+        console.log('[DEBUG] All items removed')
+      }
+    )
+
+    // Copy files/folders
+    ipcMain.handle('fileManager:copy', async (event, sourcePaths: string[], destPath: string) => {
+      console.log('[DEBUG] IPC copy called:', sourcePaths, 'to', destPath)
+      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+      const rootPath = windowId ? rootPaths.get(windowId) : null
+
+      if (!rootPath) {
+        console.error('[DEBUG] No root path for window:', windowId)
+        throw new Error('No root folder selected')
+      }
+
+      const validatedDest = validatePath(rootPath, destPath)
+
+      for (const sourcePath of sourcePaths) {
+        const validatedSource = validatePath(rootPath, sourcePath)
+        const fileName = path.basename(validatedSource)
+        let targetPath = path.join(validatedDest, fileName)
+        console.log('[DEBUG] Copying:', validatedSource, 'to', targetPath)
+
+        // Check if target already exists, generate unique name if needed
+        if (await fs.stat(targetPath).catch(() => null)) {
+          const ext = path.extname(fileName)
+          const baseName = ext ? fileName.slice(0, -ext.length) : fileName
+
+          let counter = 1
+          let newFileName = `${baseName} - Copy${ext}`
+          targetPath = path.join(validatedDest, newFileName)
+
+          // Keep trying until we find a unique name
+          while (await fs.stat(targetPath).catch(() => null)) {
+            counter++
+            newFileName = `${baseName} - Copy ${counter}${ext}`
+            targetPath = path.join(validatedDest, newFileName)
+          }
+
+          console.log('[DEBUG] Target exists, using unique name:', newFileName)
+        }
+
+        // Validate target is in root
+        validatePath(rootPath, targetPath)
+
+        await copyRecursive(validatedSource, targetPath)
+        console.log('[DEBUG] Copied successfully')
+      }
+      console.log('[DEBUG] All items copied')
+    })
+
+    // Move files/folders
+    ipcMain.handle('fileManager:move', async (event, sourcePaths: string[], destPath: string) => {
+      console.log('[DEBUG] IPC move called:', sourcePaths, 'to', destPath)
+      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+      const rootPath = windowId ? rootPaths.get(windowId) : null
+
+      if (!rootPath) {
+        console.error('[DEBUG] No root path for window:', windowId)
+        throw new Error('No root folder selected')
+      }
+
+      const validatedDest = validatePath(rootPath, destPath)
+
+      for (const sourcePath of sourcePaths) {
+        const validatedSource = validatePath(rootPath, sourcePath)
+        const fileName = path.basename(validatedSource)
+        const targetPath = path.join(validatedDest, fileName)
+        console.log('[DEBUG] Moving:', validatedSource, 'to', targetPath)
+
+        // Validate target is in root
+        validatePath(rootPath, targetPath)
+
+        await fs.rename(validatedSource, targetPath)
+        console.log('[DEBUG] Moved successfully')
+      }
+      console.log('[DEBUG] All items moved')
+    })
+
+    // Open in system file explorer
+    ipcMain.handle('fileManager:openInExplorer', async (event, targetPath: string) => {
       const windowId = BrowserWindow.fromWebContents(event.sender)?.id
       const rootPath = windowId ? rootPaths.get(windowId) : null
 
@@ -422,37 +756,11 @@ export function setupFileManagerHandlers(): void {
       }
 
       const validatedPath = validatePath(rootPath, targetPath)
+      await shell.showItemInFolder(validatedPath)
+    })
 
-      if (resolution === 'cancel') {
-        return { success: false, cancelled: true }
-      }
-
-      if (resolution === 'overwrite') {
-        // Delete existing file
-        const destPath = path.join(validatedPath, desiredName)
-        validatePath(rootPath, destPath)
-        try {
-          await fs.unlink(destPath)
-        } catch {
-          // Ignore if doesn't exist
-        }
-        return { success: true, finalName: desiredName }
-      }
-
-      if (resolution === 'keep-both') {
-        // Generate unique name
-        const uniqueName = await generateUniqueFileName(validatedPath, desiredName)
-        return { success: true, finalName: uniqueName }
-      }
-
-      throw new Error('Invalid conflict resolution')
-    }
-  )
-
-  // Upload files with progress
-  ipcMain.handle(
-    'fileManager:upload',
-    async (event, files: any[], destPath: string, options?: any) => {
+    // Open file with default application
+    ipcMain.handle('fileManager:openFile', async (event, targetPath: string) => {
       const windowId = BrowserWindow.fromWebContents(event.sender)?.id
       const rootPath = windowId ? rootPaths.get(windowId) : null
 
@@ -460,233 +768,28 @@ export function setupFileManagerHandlers(): void {
         throw new Error('No root folder selected')
       }
 
-      const validatedDest = validatePath(rootPath, destPath)
-      const results = {
-        success: true,
-        uploaded: [] as string[],
-        skipped: [] as string[],
-        failed: [] as Array<{ file: string; error: string }>,
-        details: [] as any[]
+      const validatedPath = validatePath(rootPath, targetPath)
+      const result = await shell.openPath(validatedPath)
+
+      if (result) {
+        throw new Error(`Failed to open file: ${result}`)
       }
+    })
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        const fileName = path.basename(file.path)
+    // Path utilities
+    ipcMain.handle('fileManager:joinPath', async (_event, ...paths: string[]) => {
+      return path.join(...paths)
+    })
 
-        // Validate file type if allowlist provided
-        if (options?.allowedTypes !== false && !isAllowedFileType(fileName)) {
-          results.skipped.push(fileName)
-          results.details.push({
-            file: fileName,
-            status: 'skipped',
-            reason: 'File type not allowed'
-          })
-          continue
-        }
+    ipcMain.handle('fileManager:getParentPath', async (_event, targetPath: string) => {
+      return path.dirname(targetPath)
+    })
 
-        try {
-          const targetPath = path.join(validatedDest, fileName)
-          validatePath(rootPath, targetPath)
-
-          // Check for conflict
-          let finalPath = targetPath
-          let finalName = fileName
-          try {
-            await fs.access(targetPath)
-            // File exists - handle conflict
-            const onConflict = options?.onConflict || 'skip'
-
-            if (onConflict === 'skip') {
-              results.skipped.push(fileName)
-              results.details.push({
-                file: fileName,
-                status: 'skipped',
-                reason: 'File already exists'
-              })
-              continue
-            } else if (onConflict === 'keep-both') {
-              finalName = await generateUniqueFileName(validatedDest, fileName)
-              finalPath = path.join(validatedDest, finalName)
-            }
-            // 'overwrite' will just proceed with copy
-          } catch {
-            // File doesn't exist, continue
-          }
-
-          // Copy file with progress events
-          const stats = await fs.stat(file.path)
-          const totalBytes = stats.size
-
-          // Send progress start
-          event.sender.send('fileManager:uploadProgress', {
-            fileIndex: i,
-            fileName,
-            bytesTransferred: 0,
-            totalBytes,
-            percent: 0,
-            status: 'uploading'
-          })
-
-          // Copy file
-          await fs.copyFile(file.path, finalPath)
-
-          // Send progress complete
-          event.sender.send('fileManager:uploadProgress', {
-            fileIndex: i,
-            fileName,
-            bytesTransferred: totalBytes,
-            totalBytes,
-            percent: 100,
-            status: 'complete'
-          })
-
-          results.uploaded.push(finalName)
-          results.details.push({
-            file: fileName,
-            finalName,
-            status: 'uploaded'
-          })
-        } catch (error: any) {
-          results.failed.push({
-            file: fileName,
-            error: error.message
-          })
-          results.details.push({
-            file: fileName,
-            status: 'failed',
-            error: error.message
-          })
-
-          // Send error progress
-          event.sender.send('fileManager:uploadProgress', {
-            fileIndex: i,
-            fileName,
-            status: 'error',
-            error: error.message
-          })
-        }
-      }
-
-      results.success = results.failed.length === 0
-
-      return results
-    }
-  )
-
-  // Delete files/folders
-  ipcMain.handle(
-    'fileManager:remove',
-    async (event, paths: string[], options: { toTrash: boolean }) => {
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
-
-      if (!rootPath) {
-        throw new Error('No root folder selected')
-      }
-
-      for (const targetPath of paths) {
-        const validatedPath = validatePath(rootPath, targetPath)
-
-        if (options.toTrash) {
-          // Use shell.trashItem for safe deletion
-          await shell.trashItem(validatedPath)
-        } else {
-          // Permanent deletion
-          const stats = await fs.stat(validatedPath)
-          if (stats.isDirectory()) {
-            await fs.rm(validatedPath, { recursive: true, force: true })
-          } else {
-            await fs.unlink(validatedPath)
-          }
-        }
-      }
-    }
-  )
-
-  // Copy files/folders
-  ipcMain.handle('fileManager:copy', async (event, sourcePaths: string[], destPath: string) => {
-    const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-    const rootPath = windowId ? rootPaths.get(windowId) : null
-
-    if (!rootPath) {
-      throw new Error('No root folder selected')
-    }
-
-    const validatedDest = validatePath(rootPath, destPath)
-
-    for (const sourcePath of sourcePaths) {
-      const validatedSource = validatePath(rootPath, sourcePath)
-      const fileName = path.basename(validatedSource)
-      const targetPath = path.join(validatedDest, fileName)
-
-      // Validate target is in root
-      validatePath(rootPath, targetPath)
-
-      await copyRecursive(validatedSource, targetPath)
-    }
-  })
-
-  // Move files/folders
-  ipcMain.handle('fileManager:move', async (event, sourcePaths: string[], destPath: string) => {
-    const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-    const rootPath = windowId ? rootPaths.get(windowId) : null
-
-    if (!rootPath) {
-      throw new Error('No root folder selected')
-    }
-
-    const validatedDest = validatePath(rootPath, destPath)
-
-    for (const sourcePath of sourcePaths) {
-      const validatedSource = validatePath(rootPath, sourcePath)
-      const fileName = path.basename(validatedSource)
-      const targetPath = path.join(validatedDest, fileName)
-
-      // Validate target is in root
-      validatePath(rootPath, targetPath)
-
-      await fs.rename(validatedSource, targetPath)
-    }
-  })
-
-  // Open in system file explorer
-  ipcMain.handle('fileManager:openInExplorer', async (event, targetPath: string) => {
-    const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-    const rootPath = windowId ? rootPaths.get(windowId) : null
-
-    if (!rootPath) {
-      throw new Error('No root folder selected')
-    }
-
-    const validatedPath = validatePath(rootPath, targetPath)
-    await shell.showItemInFolder(validatedPath)
-  })
-
-  // Open file with default application
-  ipcMain.handle('fileManager:openFile', async (event, targetPath: string) => {
-    const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-    const rootPath = windowId ? rootPaths.get(windowId) : null
-
-    if (!rootPath) {
-      throw new Error('No root folder selected')
-    }
-
-    const validatedPath = validatePath(rootPath, targetPath)
-    const result = await shell.openPath(validatedPath)
-
-    if (result) {
-      throw new Error(`Failed to open file: ${result}`)
-    }
-  })
-
-  // Path utilities
-  ipcMain.handle('fileManager:joinPath', async (_event, ...paths: string[]) => {
-    return path.join(...paths)
-  })
-
-  ipcMain.handle('fileManager:getParentPath', async (_event, targetPath: string) => {
-    return path.dirname(targetPath)
-  })
+    console.log('[FileManager] All IPC handlers registered successfully')
+  } catch (error) {
+    console.error('[FileManager] Error setting up handlers:', error)
+    throw error
+  }
 }
 
 /**

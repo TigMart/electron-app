@@ -82,24 +82,24 @@ export function Toolbar({
         <Folder className="mr-2 h-4 w-4" />
         Choose Folder
       </Button>
-      
+
       <div className="h-6 w-px bg-border" />
-      
+
       <Button onClick={onNewFolder} variant="outline" size="sm">
         <FolderPlus className="mr-2 h-4 w-4" />
         New Folder
       </Button>
-      
+
       <Button onClick={onCopy} variant="outline" size="sm" disabled={selectedCount === 0}>
         <Copy className="mr-2 h-4 w-4" />
         Copy
       </Button>
-      
+
       <Button onClick={onCut} variant="outline" size="sm" disabled={selectedCount === 0}>
         <Move className="mr-2 h-4 w-4" />
         Cut
       </Button>
-      
+
       <Button onClick={onPaste} variant="outline" size="sm" disabled={!hasClipboard}>
         Paste
         {hasClipboard && clipboardOperation && (
@@ -108,19 +108,19 @@ export function Toolbar({
           </span>
         )}
       </Button>
-      
+
       <Button onClick={onDelete} variant="outline" size="sm" disabled={selectedCount === 0}>
         <Trash2 className="mr-2 h-4 w-4" />
         Delete
       </Button>
-      
+
       <div className="h-6 w-px bg-border" />
-      
+
       <Button onClick={onRefresh} variant="outline" size="sm">
         <RefreshCw className="mr-2 h-4 w-4" />
         Refresh
       </Button>
-      
+
       <Button
         onClick={onToggleHidden}
         variant="outline"
@@ -129,7 +129,7 @@ export function Toolbar({
       >
         {showHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </Button>
-      
+
       <div className="ml-auto flex items-center gap-2">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input
@@ -170,7 +170,7 @@ export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
       <Button onClick={() => onNavigate(items[0].path)} variant="ghost" size="sm">
         <Home className="h-4 w-4" />
       </Button>
-      
+
       {items.slice(1).map((item) => (
         <div key={item.path} className="flex items-center gap-2">
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -266,7 +266,7 @@ export function FileList({
             <td className="p-2"></td>
           </tr>
         )}
-        
+
         {files.map((file) => (
           <FileRow
             key={file.path}
@@ -330,7 +330,7 @@ export function FileRow({
   useEffect(() => {
     if (isRenaming && inputRef.current) {
       inputRef.current.focus()
-      
+
       // Select filename without extension
       const ext = file.extension ? `.${file.extension}` : ''
       const nameWithoutExt = file.name.replace(ext, '')
@@ -385,15 +385,15 @@ export function FileRow({
           onClick={(e) => e.stopPropagation()}
         />
       </td>
-      
+
       <td className="p-2">
         <div className="flex items-center gap-2">
           {file.type === 'directory' ? (
-            <Folder className="h-4 w-4 flex-shrink-0 text-blue-500" />
+            <Folder className="h-4 w-4 shrink-0 text-blue-500" />
           ) : (
-            <File className="h-4 w-4 flex-shrink-0" />
+            <File className="h-4 w-4 shrink-0" />
           )}
-          
+
           {isRenaming ? (
             <Input
               ref={inputRef}
@@ -417,19 +417,19 @@ export function FileRow({
           )}
         </div>
       </td>
-      
+
       <td className="p-2 text-sm text-muted-foreground">
         {file.type === 'directory' ? 'Folder' : file.extension?.toUpperCase() || 'File'}
       </td>
-      
+
       <td className="p-2 text-sm text-muted-foreground">
         {file.type === 'file' ? formatBytes(file.size) : '-'}
       </td>
-      
+
       <td className="p-2 text-sm text-muted-foreground">
         {new Date(file.modified).toLocaleString()}
       </td>
-      
+
       <td className="p-2">
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           {file.type === 'file' && (
@@ -437,7 +437,7 @@ export function FileRow({
               <ExternalLink className="h-4 w-4" />
             </Button>
           )}
-          
+
           <Button onClick={onRevealInExplorer} variant="ghost" size="sm" title="Show in Explorer">
             <Folder className="h-4 w-4" />
           </Button>
@@ -491,7 +491,7 @@ export function DropZone({
       onDrop={onDrop}
     >
       {children}
-      
+
       {isDragging && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
           <div className="rounded-lg border-2 border-dashed border-primary bg-background/90 p-8 text-center">
@@ -503,7 +503,7 @@ export function DropZone({
           </div>
         </div>
       )}
-      
+
       {isUploading && uploadProgress.length > 0 && (
         <div className="absolute bottom-4 right-4 w-64 rounded-lg border bg-background p-4 shadow-lg">
           <h3 className="mb-2 font-medium">Uploading files...</h3>
@@ -563,23 +563,23 @@ export function ConflictDialog({ open, conflict, onResolve, onCancel }: Conflict
             A file named <strong>{conflict.newName}</strong> already exists in this location.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="py-4">
           <p className="text-sm text-muted-foreground">
             What would you like to do?
           </p>
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          
+
           <Button variant="outline" onClick={() => onResolve('keep-both')}>
             Keep Both
             <span className="ml-1 text-xs text-muted-foreground">(add suffix)</span>
           </Button>
-          
+
           <Button variant="destructive" onClick={() => onResolve('overwrite')}>
             Overwrite
           </Button>
@@ -620,12 +620,12 @@ export default function FileManagerPage() {
   const [rootPath, setRootPath] = useState<string | null>(null)
   const [currentPath, setCurrentPath] = useState<string>('')
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
-  
+
   // UI state
   const [showHidden, setShowHidden] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [clipboard, setClipboard] = useState<{ paths: string[]; operation: 'copy' | 'move' } | null>(null)
-  
+
   // Dialog state
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -714,13 +714,13 @@ export default function FileManagerPage() {
 
   const handlePaste = async () => {
     if (!clipboard) return
-    
+
     if (clipboard.operation === 'copy') {
       await copy(clipboard.paths, currentPath)
     } else {
       await move(clipboard.paths, currentPath)
     }
-    
+
     setClipboard(null)
     setSelectedFiles(new Set())
   }
@@ -729,7 +729,7 @@ export default function FileManagerPage() {
   const handleDelete = async (toTrash: boolean) => {
     const paths = Array.from(selectedFiles)
     if (paths.length === 0) return
-    
+
     await remove(paths, toTrash)
     setDeleteDialogOpen(false)
     setSelectedFiles(new Set())
@@ -738,7 +738,7 @@ export default function FileManagerPage() {
   // New folder
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return
-    
+
     await createFolder(newFolderName)
     setNewFolderDialogOpen(false)
     setNewFolderName('')
@@ -779,7 +779,7 @@ export default function FileManagerPage() {
   // Breadcrumbs
   const getBreadcrumbs = (): BreadcrumbItem[] => {
     if (!rootPath || !currentPath) return []
-    
+
     const rel = currentPath.replace(rootPath, '')
     const parts = rel.split(/[/\\]/).filter(Boolean)
     const breadcrumbs: BreadcrumbItem[] = [{ name: 'Root', path: rootPath }]
@@ -811,7 +811,7 @@ export default function FileManagerPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <Toaster />
-      
+
       <Toolbar
         onSelectFolder={selectFolder}
         onNewFolder={() => setNewFolderDialogOpen(true)}
@@ -941,6 +941,7 @@ const FileManagerPage = lazy(() => import('./pages/FileManagerPage'))
 ## ✅ Installation
 
 1. Install sonner for toasts:
+
    ```bash
    pnpm add sonner
    ```
@@ -948,6 +949,7 @@ const FileManagerPage = lazy(() => import('./pages/FileManagerPage'))
 2. Create all component files in the correct directories
 
 3. Run format:
+
    ```bash
    pnpm run format
    ```

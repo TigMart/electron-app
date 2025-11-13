@@ -6,7 +6,8 @@ import {
   IconCopy,
   IconCut,
   IconClipboard,
-  IconSearch
+  IconSearch,
+  IconRefresh
 } from '@tabler/icons-react'
 
 interface ToolbarProps {
@@ -19,6 +20,7 @@ interface ToolbarProps {
   onCopy: () => void
   onCut: () => void
   onPaste: () => void
+  onRefresh: () => void
 }
 
 export function Toolbar({
@@ -30,13 +32,18 @@ export function Toolbar({
   onDelete,
   onCopy,
   onCut,
-  onPaste
+  onPaste,
+  onRefresh
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 p-2 border-b">
       <Button size="sm" variant="outline" onClick={onNewFolder}>
         <IconFolderPlus size={16} />
         <span className="ml-1">New Folder</span>
+      </Button>
+
+      <Button size="sm" variant="outline" onClick={onRefresh} title="Refresh">
+        <IconRefresh size={16} />
       </Button>
 
       <div className="w-px h-6 bg-border" />

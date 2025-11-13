@@ -9,6 +9,11 @@ interface FileListProps {
   onFileSelect: (filePath: string, selected: boolean) => void
   onFileRename: (filePath: string, newName: string) => void
   onFileOpen: (file: FileItem) => void
+  onFileDelete: (filePath: string) => void
+  onFileCopy: (filePath: string) => void
+  onFileCut: (filePath: string) => void
+  onFileOpenExternal: (filePath: string) => void
+  onFileOpenInExplorer: (filePath: string) => void
   onNavigateUp: () => void
   canNavigateUp: boolean
 }
@@ -19,6 +24,11 @@ export function FileList({
   onFileSelect,
   onFileRename,
   onFileOpen,
+  onFileDelete,
+  onFileCopy,
+  onFileCut,
+  onFileOpenExternal,
+  onFileOpenInExplorer,
   onNavigateUp,
   canNavigateUp
 }: FileListProps) {
@@ -32,13 +42,14 @@ export function FileList({
             <TableHead>Type</TableHead>
             <TableHead>Size</TableHead>
             <TableHead>Modified</TableHead>
+            <TableHead className="w-12">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {canNavigateUp && (
             <tr className="hover:bg-muted/50 cursor-pointer" onClick={onNavigateUp}>
               <td className="p-2"></td>
-              <td className="p-2" colSpan={4}>
+              <td className="p-2" colSpan={5}>
                 <div className="flex items-center gap-2">
                   <IconFolderUp size={20} className="text-muted-foreground shrink-0" />
                   <span>..</span>
@@ -55,12 +66,17 @@ export function FileList({
               onSelect={(selected) => onFileSelect(file.path, selected)}
               onRename={(newName) => onFileRename(file.path, newName)}
               onOpen={() => onFileOpen(file)}
+              onDelete={() => onFileDelete(file.path)}
+              onCopy={() => onFileCopy(file.path)}
+              onCut={() => onFileCut(file.path)}
+              onOpenExternal={() => onFileOpenExternal(file.path)}
+              onOpenInExplorer={() => onFileOpenInExplorer(file.path)}
             />
           ))}
 
           {files.length === 0 && !canNavigateUp && (
             <tr>
-              <td colSpan={5} className="p-8 text-center text-muted-foreground">
+              <td colSpan={6} className="p-8 text-center text-muted-foreground">
                 No files or folders
               </td>
             </tr>

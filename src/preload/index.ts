@@ -60,6 +60,8 @@ const fileManagerAPI = {
     ipcRenderer.invoke('fileManager:move', sourcePaths, destPath),
   upload: (files: any[], destPath: string, options?: any) =>
     ipcRenderer.invoke('fileManager:upload', files, destPath, options),
+  saveTempFile: (fileName: string, buffer: Uint8Array) =>
+    ipcRenderer.invoke('fileManager:saveTempFile', fileName, buffer),
 
   // System operations
   openInExplorer: (path: string) => ipcRenderer.invoke('fileManager:openInExplorer', path),

@@ -16,7 +16,7 @@ export function useDirectory(currentPath: string | null, options: UseDirectoryOp
   const [error, setError] = useState<string | null>(null)
   const toast = useToast()
 
-  const refresh = useCallback(async () => {
+  const loadFiles = useCallback(async () => {
     if (!currentPath) {
       setFiles([])
       return
@@ -40,19 +40,14 @@ export function useDirectory(currentPath: string | null, options: UseDirectoryOp
     } finally {
       setLoading(false)
     }
-  }, [
-    currentPath,
-    options.searchQuery,
-    options.showHidden,
-    options.sortBy,
-    options.sortDirection,
-    toast
-  ])
-
-  useEffect(() => {
-    refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPath, options.showHidden, options.sortBy, options.sortDirection, options.searchQuery])
+  }, [currentPath, options.searchQuery, options.showHidden, options.sortBy, options.sortDirection])
 
-  return { files, loading, error, refresh }
+  // Auto-load when path or options change
+  useEffect(() => {
+    loadFiles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPath, options.searchQuery, options.showHidden, options.sortBy, options.sortDirection])
+
+  return { files, loading, error, refresh: loadFiles }
 }

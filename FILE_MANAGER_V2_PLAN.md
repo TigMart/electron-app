@@ -1,11 +1,13 @@
 # File Manager V2 - Implementation Plan
 
 ## 🎯 Overview
+
 This document outlines the complete refactoring and enhancement of the File Manager with rename functionality, drag-and-drop uploads, and modular component architecture.
 
 ## 📋 Architecture
 
 ### Component Structure
+
 ```
 src/renderer/src/
 ├── pages/
@@ -35,6 +37,7 @@ src/renderer/src/
 #### New Handlers (main/fileManager.ts)
 
 1. **validateFileName** - Validates filename before rename
+
    ```typescript
    ipcMain.handle('fileManager:validateFileName', async (event, name: string, oldName?: string) => {
      // Returns ValidationError[]
@@ -43,32 +46,44 @@ src/renderer/src/
    ```
 
 2. **rename** - Enhanced with conflict detection
+
    ```typescript
-   ipcMain.handle('fileManager:rename', async (event, oldPath: string, newName: string, options?: RenameOptions) => {
-     // Returns RenameResult with conflict info
-     // Preserves extension by default
-     // Detects if target already exists
-   })
+   ipcMain.handle(
+     'fileManager:rename',
+     async (event, oldPath: string, newName: string, options?: RenameOptions) => {
+       // Returns RenameResult with conflict info
+       // Preserves extension by default
+       // Detects if target already exists
+     }
+   )
    ```
 
 3. **resolveConflict** - Handles rename/upload conflicts
+
    ```typescript
-   ipcMain.handle('fileManager:resolveConflict', async (event, path: string, name: string, resolution: ConflictResolution) => {
-     // Returns final filename
-     // 'overwrite': replaces existing
-     // 'keep-both': adds suffix (1), (2), etc.
-     // 'cancel': throws error
-   })
+   ipcMain.handle(
+     'fileManager:resolveConflict',
+     async (event, path: string, name: string, resolution: ConflictResolution) => {
+       // Returns final filename
+       // 'overwrite': replaces existing
+       // 'keep-both': adds suffix (1), (2), etc.
+       // 'cancel': throws error
+     }
+   )
    ```
 
 4. **upload** - Copy files from OS to current folder
+
    ```typescript
-   ipcMain.handle('fileManager:upload', async (event, files: UploadFile[], destPath: string, options?: UploadOptions) => {
-     // Returns UploadResult with per-file status
-     // Validates MIME types against allowlist
-     // Emits progress events
-     // Handles conflicts per-file
-   })
+   ipcMain.handle(
+     'fileManager:upload',
+     async (event, files: UploadFile[], destPath: string, options?: UploadOptions) => {
+       // Returns UploadResult with per-file status
+       // Validates MIME types against allowlist
+       // Emits progress events
+       // Handles conflicts per-file
+     }
+   )
    ```
 
 5. **Progress Events**
@@ -91,27 +106,33 @@ src/renderer/src/
    - Normalize all paths before use
 
 2. **File Name Validation**
+
    ```typescript
    function validateFileName(name: string): ValidationError[] {
      const errors: ValidationError[] = []
-     
+
      if (!name || name.trim().length === 0) {
        errors.push({ field: 'name', code: 'EMPTY_NAME', message: 'Name cannot be empty' })
      }
      if (name.includes('/') || name.includes('\\')) {
-       errors.push({ field: 'name', code: 'PATH_SEPARATOR', message: 'Name cannot contain / or \\' })
+       errors.push({
+         field: 'name',
+         code: 'PATH_SEPARATOR',
+         message: 'Name cannot contain / or \\'
+       })
      }
      if (name.length > 255) {
        errors.push({ field: 'name', code: 'TOO_LONG', message: 'Name too long (max 255 chars)' })
      }
-     
+
      // Additional platform-specific checks for Windows: < > : " | ? *
-     
+
      return errors
    }
    ```
 
 3. **MIME Type Validation**
+
    ```typescript
    const ALLOWED_TYPES = [
      'application/pdf',
@@ -122,9 +143,9 @@ src/renderer/src/
      'image/gif',
      'image/webp'
    ]
-   
+
    const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.gif', '.webp']
-   
+
    function isAllowedFile(filename: string, mimeType?: string): boolean {
      const ext = path.extname(filename).toLowerCase()
      return ALLOWED_EXTENSIONS.includes(ext)
@@ -133,15 +154,24 @@ src/renderer/src/
 
 4. **Conflict Resolution**
    ```typescript
-   async function generateUniqueFileName(dir: string, baseName: string, ext: string): Promise<string> {
+   async function generateUniqueFileName(
+     dir: string,
+     baseName: string,
+     ext: string
+   ): Promise<string> {
      let counter = 1
      let newName = `${baseName}${ext}`
-     
-     while (await fs.access(path.join(dir, newName)).then(() => true).catch(() => false)) {
+
+     while (
+       await fs
+         .access(path.join(dir, newName))
+         .then(() => true)
+         .catch(() => false)
+     ) {
        newName = `${baseName} (${counter})${ext}`
        counter++
      }
-     
+
      return newName
    }
    ```
@@ -154,7 +184,7 @@ Create these functions in `src/main/fileManager.ts`:
 
 1. **validateFileName**
    - Empty name check
-   - Path separator check  
+   - Path separator check
    - Special character validation
    - Length validation
    - Return array of ValidationError
@@ -182,34 +212,36 @@ Create these functions in `src/main/fileManager.ts`:
 ### Phase 2: Custom Hooks
 
 1. **useToast** (`src/renderer/src/hooks/file-manager/useToast.ts`)
+
    ```typescript
    export function useToast() {
      const [toasts, setToasts] = useState<Toast[]>([])
-     
+
      const showToast = (message: string, type: 'success' | 'error' | 'info') => {
        const id = Date.now()
-       setToasts(prev => [...prev, { id, message, type }])
+       setToasts((prev) => [...prev, { id, message, type }])
        setTimeout(() => removeToast(id), 3000)
      }
-     
+
      const removeToast = (id: number) => {
-       setToasts(prev => prev.filter(t => t.id !== id))
+       setToasts((prev) => prev.filter((t) => t.id !== id))
      }
-     
+
      return { toasts, showToast, removeToast }
    }
    ```
 
 2. **useDirectory** (`src/renderer/src/hooks/file-manager/useDirectory.ts`)
+
    ```typescript
    export function useDirectory(currentPath: string, options: ListOptions) {
      const [files, setFiles] = useState<FileItem[]>([])
      const [loading, setLoading] = useState(false)
      const [error, setError] = useState<string | null>(null)
-     
+
      const loadFiles = useCallback(async () => {
        if (!currentPath) return
-       
+
        setLoading(true)
        try {
          const items = await window.fileManager.listFiles(currentPath, options)
@@ -221,18 +253,21 @@ Create these functions in `src/main/fileManager.ts`:
          setLoading(false)
        }
      }, [currentPath, options])
-     
-     useEffect(() => { loadFiles() }, [loadFiles])
-     
+
+     useEffect(() => {
+       loadFiles()
+     }, [loadFiles])
+
      return { files, loading, error, refresh: loadFiles }
    }
    ```
 
 3. **useFileOps** (`src/renderer/src/hooks/file-manager/useFileOps.ts`)
+
    ```typescript
    export function useFileOps(currentPath: string, onRefresh: () => void) {
      const { showToast } = useToast()
-     
+
      const rename = async (oldPath: string, newName: string) => {
        try {
          // Validate first
@@ -241,10 +276,12 @@ Create these functions in `src/main/fileManager.ts`:
            showToast(errors[0].message, 'error')
            return null
          }
-         
+
          // Attempt rename
-         const result = await window.fileManager.rename(oldPath, newName, { preserveExtension: true })
-         
+         const result = await window.fileManager.rename(oldPath, newName, {
+           preserveExtension: true
+         })
+
          // Handle conflicts
          if (result.conflict) {
            // Show conflict dialog, get resolution
@@ -252,7 +289,7 @@ Create these functions in `src/main/fileManager.ts`:
            const finalName = await window.fileManager.resolveConflict(oldPath, newName, resolution)
            await window.fileManager.rename(oldPath, finalName)
          }
-         
+
          showToast('Renamed successfully', 'success')
          onRefresh()
          return result.finalName
@@ -261,11 +298,17 @@ Create these functions in `src/main/fileManager.ts`:
          return null
        }
      }
-     
-     const remove = async (paths: string[], toTrash: boolean) => { /* ... */ }
-     const copy = async (paths: string[], dest: string) => { /* ... */ }
-     const move = async (paths: string[], dest: string) => { /* ... */ }
-     
+
+     const remove = async (paths: string[], toTrash: boolean) => {
+       /* ... */
+     }
+     const copy = async (paths: string[], dest: string) => {
+       /* ... */
+     }
+     const move = async (paths: string[], dest: string) => {
+       /* ... */
+     }
+
      return { rename, remove, copy, move }
    }
    ```
@@ -275,43 +318,43 @@ Create these functions in `src/main/fileManager.ts`:
    export function useDnD(currentPath: string, onUploadComplete: () => void) {
      const [isDragging, setIsDragging] = useState(false)
      const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([])
-     
+
      useEffect(() => {
        const unsubscribe = window.fileManager.onUploadProgress((progress) => {
-         setUploadProgress(prev => {
+         setUploadProgress((prev) => {
            const updated = [...prev]
            updated[progress.fileIndex] = progress
            return updated
          })
        })
-       
+
        return unsubscribe
      }, [])
-     
+
      const handleDrop = async (e: React.DragEvent) => {
        e.preventDefault()
        setIsDragging(false)
-       
-       const files: UploadFile[] = Array.from(e.dataTransfer.files).map(f => ({
+
+       const files: UploadFile[] = Array.from(e.dataTransfer.files).map((f) => ({
          name: f.name,
          path: f.path,
          size: f.size,
          type: f.type
        }))
-       
+
        try {
          const result = await window.fileManager.upload(files, currentPath, {
            allowedTypes: ALLOWED_UPLOAD_TYPES,
            onConflict: 'keep-both'
          })
-         
+
          // Show results
          onUploadComplete()
        } catch (err) {
          // Handle error
        }
      }
-     
+
      return { isDragging, uploadProgress, handleDrop, setIsDragging }
    }
    ```
@@ -356,7 +399,7 @@ Create these functions in `src/main/fileManager.ts`:
 2. **Validation**
    - No empty names
    - No path separators (/ \\)
-   - No special chars (Windows: < > : " | ? *)
+   - No special chars (Windows: < > : " | ? \*)
    - Max 255 characters
    - Trim whitespace
 
@@ -374,6 +417,7 @@ Create these functions in `src/main/fileManager.ts`:
    - Images: `image/png`, `image/jpeg`, `image/gif`, `image/webp`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`
 
 2. **Upload Flow**
+
    ```
    User drops files
    → Validate each file type
@@ -466,6 +510,7 @@ useToast()
 ## 📚 File Changes Summary
 
 ### New Files
+
 - `src/main/fileManager.ts` - Enhanced handlers
 - `src/renderer/src/hooks/file-manager/useFileOps.ts`
 - `src/renderer/src/hooks/file-manager/useDirectory.ts`
@@ -481,6 +526,7 @@ useToast()
 - `src/renderer/src/components/file-manager/ProgressBar.tsx`
 
 ### Modified Files
+
 - `src/renderer/src/types/fileManager.ts` - ✅ Updated
 - `src/preload/index.ts` - ✅ Updated
 - `src/preload/index.d.ts` - ✅ Updated

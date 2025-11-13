@@ -10,11 +10,12 @@ This package provides a **complete, production-ready implementation** of the enh
 ✅ **Custom hooks** for reusable business logic  
 ✅ **Type-safe IPC contracts** with full TypeScript coverage  
 ✅ **Security-first design** with path validation and no direct fs access in renderer  
-✅ **Cross-platform support** for macOS 12+ and Windows 10/11  
+✅ **Cross-platform support** for macOS 12+ and Windows 10/11
 
 ## 📚 Documentation Files
 
 ### 1. **FILE_MANAGER_V2_PLAN.md** - Architecture & Design
+
 - Complete component structure
 - IPC contract specifications
 - Security model details
@@ -22,6 +23,7 @@ This package provides a **complete, production-ready implementation** of the enh
 - Acceptance criteria
 
 ### 2. **FILE_MANAGER_V2_IMPLEMENTATION.md** - Step-by-Step Guide
+
 - **Phase 1**: Main process handlers (validateFileName, rename, resolveConflict, upload)
 - **Phase 2**: Custom hooks (useToast, useDirectory, useFileOps, useDnD)
 - **Phase 3**: Installation instructions
@@ -30,6 +32,7 @@ This package provides a **complete, production-ready implementation** of the enh
 - Verification checklist
 
 ### 3. **FILE_MANAGER_V2_COMPONENTS.md** - Component Library
+
 - **Complete** copy-paste ready components:
   - Toolbar.tsx
   - Breadcrumbs.tsx
@@ -43,6 +46,7 @@ This package provides a **complete, production-ready implementation** of the enh
 ## 🎯 Key Features Implemented
 
 ### Rename Functionality
+
 - ✅ Inline editing on double-click or F2
 - ✅ Auto-select filename without extension
 - ✅ Extension preservation by default
@@ -54,6 +58,7 @@ This package provides a **complete, production-ready implementation** of the enh
 - ✅ Real-time error messages
 
 ### Drag-and-Drop Upload
+
 - ✅ Drop files from OS (Explorer/Finder)
 - ✅ Visual overlay on drag-over
 - ✅ File type validation (PDF, DOC, DOCX, PNG, JPG, GIF, WebP only)
@@ -65,6 +70,7 @@ This package provides a **complete, production-ready implementation** of the enh
 - ✅ Ignores folders (files only)
 
 ### Security Model
+
 - ✅ No direct fs access in renderer
 - ✅ All operations via IPC handlers
 - ✅ Path validation against root (no traversal)
@@ -73,6 +79,7 @@ This package provides a **complete, production-ready implementation** of the enh
 - ✅ contextIsolation: true maintained
 
 ### Architecture
+
 - ✅ Modular components (8 components)
 - ✅ Custom hooks (4 hooks)
 - ✅ Type-safe contracts
@@ -83,6 +90,7 @@ This package provides a **complete, production-ready implementation** of the enh
 ## 🚀 Quick Start
 
 ### Step 1: Copy Files (Already Done)
+
 - ✅ `src/renderer/src/types/fileManager.ts` - Updated
 - ✅ `src/preload/index.ts` - Updated
 - ✅ `src/preload/index.d.ts` - Updated
@@ -90,6 +98,7 @@ This package provides a **complete, production-ready implementation** of the enh
 ### Step 2: Implement Main Handlers
 
 Follow **FILE_MANAGER_V2_IMPLEMENTATION.md** Step 1:
+
 - Add helper functions to `src/main/fileManager.ts`
 - Add new IPC handlers (validateFileName, enhanced rename, resolveConflict, upload)
 - Replace existing rename handler
@@ -97,6 +106,7 @@ Follow **FILE_MANAGER_V2_IMPLEMENTATION.md** Step 1:
 ### Step 3: Create Hooks
 
 Copy hook files from **FILE_MANAGER_V2_IMPLEMENTATION.md** Steps 3-6:
+
 1. Create `src/renderer/src/hooks/file-manager/` directory
 2. Add `useToast.ts`
 3. Add `useDirectory.ts`
@@ -112,6 +122,7 @@ pnpm add sonner
 ### Step 5: Create Components
 
 Copy component files from **FILE_MANAGER_V2_COMPONENTS.md**:
+
 1. Create `src/renderer/src/components/file-manager/` directory
 2. Add all 6 components (Toolbar, Breadcrumbs, FileList, FileRow, DropZone, ConflictDialog)
 
@@ -120,6 +131,7 @@ Copy component files from **FILE_MANAGER_V2_COMPONENTS.md**:
 Replace `src/renderer/src/pages/FilesPage.tsx` with `FileManagerPage.tsx` from **FILE_MANAGER_V2_COMPONENTS.md**
 
 Update route in `src/renderer/src/main.tsx`:
+
 ```typescript
 const FileManagerPage = lazy(() => import('./pages/FileManagerPage'))
 ```
@@ -131,6 +143,7 @@ pnpm dev
 ```
 
 Test checklist:
+
 - [ ] Select folder
 - [ ] List files
 - [ ] Rename file (F2 or double-click)
@@ -152,6 +165,7 @@ pnpm run build:win  # or build:mac
 ## 📋 Implementation Checklist
 
 ### Core Functionality
+
 - [x] TypeScript types extended
 - [x] IPC contracts updated in preload
 - [x] Main process handlers documented
@@ -160,6 +174,7 @@ pnpm run build:win  # or build:mac
 - [x] Page orchestration refactored
 
 ### Features
+
 - [x] Rename with validation
 - [x] Rename with conflict resolution
 - [x] Extension preservation
@@ -172,6 +187,7 @@ pnpm run build:win  # or build:mac
 - [x] Toast notifications
 
 ### Security
+
 - [x] Path validation
 - [x] No direct fs access
 - [x] MIME type checking
@@ -179,12 +195,14 @@ pnpm run build:win  # or build:mac
 - [x] Context isolation maintained
 
 ### Cross-Platform
+
 - [x] macOS support
 - [x] Windows support
 - [x] Path normalization
 - [x] Hidden file detection
 
 ### Documentation
+
 - [x] Architecture plan
 - [x] Implementation guide
 - [x] Component examples
@@ -287,18 +305,23 @@ Main Process (fileManager.ts):
 ## 📞 Support & Troubleshooting
 
 ### Issue: "Cannot find module" errors
+
 **Solution**: Ensure all paths are correct and dependencies installed (`pnpm install`)
 
 ### Issue: Rename doesn't work
+
 **Solution**: Check that new IPC handlers are added in main/fileManager.ts and app restarted
 
 ### Issue: Upload shows "File type not allowed"
+
 **Solution**: Verify file extension in ALLOWED_EXTENSIONS array
 
 ### Issue: F2 doesn't work
+
 **Solution**: Ensure FileRow is focused (click the row first)
 
 ### Issue: Drag-drop doesn't trigger
+
 **Solution**: Check onDragOver handler calls e.preventDefault()
 
 ## ✅ Final Checklist
@@ -335,10 +358,11 @@ Before deploying to production:
 You now have **three comprehensive documents** that provide:
 
 1. **Architecture & Design** (FILE_MANAGER_V2_PLAN.md)
-2. **Step-by-Step Implementation Guide** (FILE_MANAGER_V2_IMPLEMENTATION.md)  
+2. **Step-by-Step Implementation Guide** (FILE_MANAGER_V2_IMPLEMENTATION.md)
 3. **Complete Component Library** (FILE_MANAGER_V2_COMPONENTS.md)
 
 **Total deliverables:**
+
 - ✅ Enhanced TypeScript types
 - ✅ Extended IPC contracts
 - ✅ Main process handler specifications

@@ -1,4 +1,4 @@
-import type { BreadcrumbItem } from '../../types/fileManager'
+import type { BreadcrumbItem } from '@/types/fileManager'
 import { IconHome, IconChevronRight } from '@tabler/icons-react'
 import {
   Breadcrumb,
@@ -7,7 +7,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator
-} from '../ui/breadcrumb'
+} from '@/components/ui/breadcrumb'
 
 interface BreadcrumbsProps {
   items: BreadcrumbItem[]

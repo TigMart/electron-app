@@ -8,6 +8,7 @@
 import { ipcMain, dialog, shell, BrowserWindow, app } from 'electron'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { logger } from './utils/logger'
 
 interface FileItem {
   name: string
@@ -210,11 +211,11 @@ function isAllowedFileType(fileName: string): boolean {
  */
 export function setupFileManagerHandlers(): void {
   try {
-    console.log('[FileManager] Setting up IPC handlers...')
+    logger.log('[FileManager] Setting up IPC handlers...')
 
     // Select folder dialog
     ipcMain.handle('fileManager:selectFolder', async (event) => {
-      console.log('[FileManager] selectFolder handler called')
+      logger.log('[FileManager] selectFolder handler called')
       const window = BrowserWindow.fromWebContents(event.sender)
 
       if (!window) {
@@ -234,12 +235,12 @@ export function setupFileManagerHandlers(): void {
       const windowId = window.id
 
       rootPaths.set(windowId, selectedPath)
-      console.log('[FileManager] Root path set:', selectedPath, 'for window:', windowId)
+      logger.log('[FileManager] Root path set:', selectedPath, 'for window:', windowId)
 
       return selectedPath
     })
 
-    console.log('[FileManager] selectFolder handler registered')
+    logger.log('[FileManager] selectFolder handler registered')
 
     // List files in directory
     ipcMain.handle(
@@ -289,7 +290,7 @@ export function setupFileManagerHandlers(): void {
             items.push(item)
           } catch (error) {
             // Skip files we can't read
-            console.error(`Error reading ${entryPath}:`, error)
+            logger.error(`Error reading ${entryPath}:`, error)
           }
         }
 
@@ -321,36 +322,36 @@ export function setupFileManagerHandlers(): void {
     ipcMain.handle(
       'fileManager:createFolder',
       async (event, parentPath: string, folderName: string) => {
-        console.log('[DEBUG] IPC createFolder called:', parentPath, folderName)
+        logger.log('[DEBUG] IPC createFolder called:', parentPath, folderName)
         const windowId = BrowserWindow.fromWebContents(event.sender)?.id
         const rootPath = windowId ? rootPaths.get(windowId) : null
 
         if (!rootPath) {
-          console.error('[DEBUG] No root path for window:', windowId)
+          logger.error('[DEBUG] No root path for window:', windowId)
           throw new Error('No root folder selected')
         }
 
         // Validate folder name
         if (!folderName || folderName.includes('/') || folderName.includes('\\')) {
-          console.error('[DEBUG] Invalid folder name:', folderName)
+          logger.error('[DEBUG] Invalid folder name:', folderName)
           throw new Error('Invalid folder name')
         }
 
         const validatedParent = validatePath(rootPath, parentPath)
         const newFolderPath = path.join(validatedParent, folderName)
-        console.log('[DEBUG] Creating folder at:', newFolderPath)
+        logger.log('[DEBUG] Creating folder at:', newFolderPath)
 
         // Check if already exists
         try {
           await fs.access(newFolderPath)
-          console.error('[DEBUG] Folder already exists:', newFolderPath)
+          logger.error('[DEBUG] Folder already exists:', newFolderPath)
           throw new Error('Folder already exists')
         } catch (error: any) {
           if (error.code !== 'ENOENT') throw error
         }
 
         await fs.mkdir(newFolderPath, { recursive: false })
-        console.log('[DEBUG] Folder created successfully')
+        logger.log('[DEBUG] Folder created successfully')
       }
     )
 
@@ -469,12 +470,12 @@ export function setupFileManagerHandlers(): void {
     ipcMain.handle(
       'fileManager:saveTempFile',
       async (_event, fileName: string, buffer: Uint8Array) => {
-        console.log('[DEBUG] Saving temp file:', fileName)
+        logger.log('[DEBUG] Saving temp file:', fileName)
         const tmpDir = app.getPath('temp')
         const tempPath = path.join(tmpDir, `electron-upload-${Date.now()}-${fileName}`)
 
         await fs.writeFile(tempPath, buffer)
-        console.log('[DEBUG] Temp file saved to:', tempPath)
+        logger.log('[DEBUG] Temp file saved to:', tempPath)
 
         return tempPath
       }
@@ -484,7 +485,7 @@ export function setupFileManagerHandlers(): void {
     ipcMain.handle(
       'fileManager:upload',
       async (event, files: any[], destPath: string, options?: any) => {
-        console.log(
+        logger.log(
           '[DEBUG] IPC upload called, files:',
           files.length,
           'destPath:',
@@ -496,12 +497,12 @@ export function setupFileManagerHandlers(): void {
         const rootPath = windowId ? rootPaths.get(windowId) : null
 
         if (!rootPath) {
-          console.error('[DEBUG] No root path for window:', windowId)
+          logger.error('[DEBUG] No root path for window:', windowId)
           throw new Error('No root folder selected')
         }
 
         const validatedDest = validatePath(rootPath, destPath)
-        console.log('[DEBUG] Validated destination:', validatedDest)
+        logger.log('[DEBUG] Validated destination:', validatedDest)
         const results = {
           success: true,
           uploaded: [] as string[],
@@ -514,12 +515,12 @@ export function setupFileManagerHandlers(): void {
           const file = files[i]
           // Use file.name which is the original name, not the path basename (which might be temp)
           const fileName = file.name
-          console.log('[DEBUG] Processing file', i + 1, 'of', files.length, ':', fileName)
-          console.log('[DEBUG] File object:', JSON.stringify(file, null, 2))
+          logger.log('[DEBUG] Processing file', i + 1, 'of', files.length, ':', fileName)
+          logger.log('[DEBUG] File object:', JSON.stringify(file, null, 2))
 
           // Validate file type if allowlist provided
           if (options?.allowedTypes !== false && !isAllowedFileType(fileName)) {
-            console.log('[DEBUG] File type not allowed:', fileName)
+            logger.log('[DEBUG] File type not allowed:', fileName)
             results.skipped.push(fileName)
             results.details.push({
               file: fileName,
@@ -531,15 +532,15 @@ export function setupFileManagerHandlers(): void {
 
           try {
             const targetPath = path.join(validatedDest, fileName)
-            console.log('[DEBUG] Source path:', file.path)
-            console.log('[DEBUG] Target path:', targetPath)
+            logger.log('[DEBUG] Source path:', file.path)
+            logger.log('[DEBUG] Target path:', targetPath)
 
             // Check if source file exists
             try {
               await fs.access(file.path)
-              console.log('[DEBUG] Source file exists')
+              logger.log('[DEBUG] Source file exists')
             } catch {
-              console.error('[DEBUG] Source file does not exist:', file.path)
+              logger.error('[DEBUG] Source file does not exist:', file.path)
               throw new Error(`Source file not found: ${file.path}`)
             }
 
@@ -640,18 +641,18 @@ export function setupFileManagerHandlers(): void {
     ipcMain.handle(
       'fileManager:remove',
       async (event, paths: string[], options: { toTrash: boolean }) => {
-        console.log('[DEBUG] IPC remove called:', paths, options)
+        logger.log('[DEBUG] IPC remove called:', paths, options)
         const windowId = BrowserWindow.fromWebContents(event.sender)?.id
         const rootPath = windowId ? rootPaths.get(windowId) : null
 
         if (!rootPath) {
-          console.error('[DEBUG] No root path for window:', windowId)
+          logger.error('[DEBUG] No root path for window:', windowId)
           throw new Error('No root folder selected')
         }
 
         for (const targetPath of paths) {
           const validatedPath = validatePath(rootPath, targetPath)
-          console.log('[DEBUG] Removing:', validatedPath, 'toTrash:', options.toTrash)
+          logger.log('[DEBUG] Removing:', validatedPath, 'toTrash:', options.toTrash)
 
           if (options.toTrash) {
             // Use shell.trashItem for safe deletion
@@ -665,20 +666,20 @@ export function setupFileManagerHandlers(): void {
               await fs.unlink(validatedPath)
             }
           }
-          console.log('[DEBUG] Removed successfully:', validatedPath)
+          logger.log('[DEBUG] Removed successfully:', validatedPath)
         }
-        console.log('[DEBUG] All items removed')
+        logger.log('[DEBUG] All items removed')
       }
     )
 
     // Copy files/folders
     ipcMain.handle('fileManager:copy', async (event, sourcePaths: string[], destPath: string) => {
-      console.log('[DEBUG] IPC copy called:', sourcePaths, 'to', destPath)
+      logger.log('[DEBUG] IPC copy called:', sourcePaths, 'to', destPath)
       const windowId = BrowserWindow.fromWebContents(event.sender)?.id
       const rootPath = windowId ? rootPaths.get(windowId) : null
 
       if (!rootPath) {
-        console.error('[DEBUG] No root path for window:', windowId)
+        logger.error('[DEBUG] No root path for window:', windowId)
         throw new Error('No root folder selected')
       }
 
@@ -688,7 +689,7 @@ export function setupFileManagerHandlers(): void {
         const validatedSource = validatePath(rootPath, sourcePath)
         const fileName = path.basename(validatedSource)
         let targetPath = path.join(validatedDest, fileName)
-        console.log('[DEBUG] Copying:', validatedSource, 'to', targetPath)
+        logger.log('[DEBUG] Copying:', validatedSource, 'to', targetPath)
 
         // Check if target already exists, generate unique name if needed
         if (await fs.stat(targetPath).catch(() => null)) {
@@ -706,26 +707,26 @@ export function setupFileManagerHandlers(): void {
             targetPath = path.join(validatedDest, newFileName)
           }
 
-          console.log('[DEBUG] Target exists, using unique name:', newFileName)
+          logger.log('[DEBUG] Target exists, using unique name:', newFileName)
         }
 
         // Validate target is in root
         validatePath(rootPath, targetPath)
 
         await copyRecursive(validatedSource, targetPath)
-        console.log('[DEBUG] Copied successfully')
+        logger.log('[DEBUG] Copied successfully')
       }
-      console.log('[DEBUG] All items copied')
+      logger.log('[DEBUG] All items copied')
     })
 
     // Move files/folders
     ipcMain.handle('fileManager:move', async (event, sourcePaths: string[], destPath: string) => {
-      console.log('[DEBUG] IPC move called:', sourcePaths, 'to', destPath)
+      logger.log('[DEBUG] IPC move called:', sourcePaths, 'to', destPath)
       const windowId = BrowserWindow.fromWebContents(event.sender)?.id
       const rootPath = windowId ? rootPaths.get(windowId) : null
 
       if (!rootPath) {
-        console.error('[DEBUG] No root path for window:', windowId)
+        logger.error('[DEBUG] No root path for window:', windowId)
         throw new Error('No root folder selected')
       }
 
@@ -735,15 +736,15 @@ export function setupFileManagerHandlers(): void {
         const validatedSource = validatePath(rootPath, sourcePath)
         const fileName = path.basename(validatedSource)
         const targetPath = path.join(validatedDest, fileName)
-        console.log('[DEBUG] Moving:', validatedSource, 'to', targetPath)
+        logger.log('[DEBUG] Moving:', validatedSource, 'to', targetPath)
 
         // Validate target is in root
         validatePath(rootPath, targetPath)
 
         await fs.rename(validatedSource, targetPath)
-        console.log('[DEBUG] Moved successfully')
+        logger.log('[DEBUG] Moved successfully')
       }
-      console.log('[DEBUG] All items moved')
+      logger.log('[DEBUG] All items moved')
     })
 
     // Open in system file explorer
@@ -785,9 +786,9 @@ export function setupFileManagerHandlers(): void {
       return path.dirname(targetPath)
     })
 
-    console.log('[FileManager] All IPC handlers registered successfully')
+    logger.log('[FileManager] All IPC handlers registered successfully')
   } catch (error) {
-    console.error('[FileManager] Error setting up handlers:', error)
+    logger.error('[FileManager] Error setting up handlers:', error)
     throw error
   }
 }

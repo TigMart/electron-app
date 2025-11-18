@@ -76,7 +76,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="text-center py-12 text-muted-foreground">{t('Common.loading')}</div>
+        <div className="text-muted-foreground py-12 text-center">{t('Common.loading')}</div>
       </div>
     )
   }
@@ -104,11 +104,11 @@ export default function SettingsPage() {
                 placeholder={t('Settings.selectTemplatesDir')}
               />
               <Button type="button" variant="outline" onClick={handleSelectTemplatesDir}>
-                <FolderOpen className="h-4 w-4 mr-2" />
+                <FolderOpen className="mr-2 h-4 w-4" />
                 {t('Common.browse')}
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">{t('Settings.templatesDirHelp')}</p>
+            <p className="text-muted-foreground text-sm">{t('Settings.templatesDirHelp')}</p>
           </div>
 
           <div className="space-y-2">
@@ -121,16 +121,16 @@ export default function SettingsPage() {
                 placeholder={t('Settings.selectGeneratedDir')}
               />
               <Button type="button" variant="outline" onClick={handleSelectGeneratedDir}>
-                <FolderOpen className="h-4 w-4 mr-2" />
+                <FolderOpen className="mr-2 h-4 w-4" />
                 {t('Common.browse')}
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">{t('Settings.generatedDirHelp')}</p>
+            <p className="text-muted-foreground text-sm">{t('Settings.generatedDirHelp')}</p>
           </div>
 
           <div className="flex justify-end pt-4">
             <Button onClick={handleSave} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
               {isSaving ? t('Settings.saving') : t('Settings.saveSettings')}
             </Button>
           </div>

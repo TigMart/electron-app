@@ -7,7 +7,7 @@ function Header() {
   const { t } = useTranslation()
 
   return (
-    <header className="w-full p-2 flex items-center justify-between border-b">
+    <header className="flex w-full items-center justify-between border-b p-2">
       <h1 className="text-2xl font-bold">{t('ContractTemplates.title')}</h1>
       <div id="actions" className="flex items-center space-x-2">
         <ContarctTemplateDialog />

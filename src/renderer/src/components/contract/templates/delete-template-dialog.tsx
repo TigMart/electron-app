@@ -38,8 +38,8 @@ export function DeleteTemplateDialog({
       <DialogContent>
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="rounded-full bg-destructive/10 p-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+            <div className="bg-destructive/10 rounded-full p-2">
+              <AlertTriangle className="text-destructive h-5 w-5" />
             </div>
             <DialogTitle>{t('DeleteDialog.title', { name: template.title })}</DialogTitle>
           </div>

@@ -40,12 +40,12 @@ export function FileExistsDialog({ fileName, type, open, onResolve }: FileExists
         </DialogHeader>
 
         <div className="flex flex-col gap-2 py-4">
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             {t('ContractTemplates.fileName')}: <span className="font-medium">{fileName}</span>
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-col gap-2">
+        <DialogFooter className="flex-col gap-2 sm:flex-col">
           <Button onClick={() => onResolve('replace')} variant="destructive" className="w-full">
             {t('Common.replace')}
           </Button>

@@ -151,7 +151,7 @@ function CheckForUpdates(): React.JSX.Element {
           {status === 'checking' && (
             <div className="space-y-2">
               <Progress value={0} className="animate-pulse" />
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-muted-foreground text-center text-sm">
                 {t('CheckForUpdates.searching', 'Searching for updates...')}
               </p>
             </div>
@@ -160,21 +160,21 @@ function CheckForUpdates(): React.JSX.Element {
           {status === 'available' && percent > 0 && percent < 100 && (
             <div className="space-y-2">
               <Progress value={percent} />
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-muted-foreground text-center text-sm">
                 {t('CheckForUpdates.downloading', 'Downloading update...')} {percent.toFixed(1)}%
               </p>
             </div>
           )}
 
           {status === 'downloaded' && (
-            <div className="rounded-lg bg-green-50 dark:bg-green-950 p-4 border border-green-200 dark:border-green-800">
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                 <p className="text-sm font-medium text-green-900 dark:text-green-100">
                   {t('CheckForUpdates.readyToInstall', 'Update ready to install')}
                 </p>
               </div>
-              <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+              <p className="mt-2 text-sm text-green-700 dark:text-green-300">
                 {t(
                   'CheckForUpdates.restartPrompt',
                   'The application will automatically update when you restart it.'
@@ -184,7 +184,7 @@ function CheckForUpdates(): React.JSX.Element {
           )}
 
           {status === 'error' && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-950 p-4 border border-red-200 dark:border-red-800">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                 <p className="text-sm font-medium text-red-900 dark:text-red-100">

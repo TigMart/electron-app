@@ -68,12 +68,12 @@ function TemplatesList() {
 
   if (templatesLoading) {
     return (
-      <div className="grid gap-2 md:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4 md:mt-6">
+      <div className="mt-4 grid gap-2 md:mt-6 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
         {[...Array(6)].map((_, i) => (
           <Card key={i} className="p-2">
             <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2 mt-1" />
-            <Skeleton className="h-3 w-full mt-1.5" />
+            <Skeleton className="mt-1 h-3 w-1/2" />
+            <Skeleton className="mt-1.5 h-3 w-full" />
           </Card>
         ))}
       </div>
@@ -91,9 +91,9 @@ function TemplatesList() {
   if (!templates || templates.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">{t('ContractTemplates.noTemplates')}</h3>
-        <p className="text-sm text-muted-foreground mb-4">
+        <FileText className="text-muted-foreground mb-4 h-12 w-12" />
+        <h3 className="mb-2 text-lg font-semibold">{t('ContractTemplates.noTemplates')}</h3>
+        <p className="text-muted-foreground mb-4 text-sm">
           {t('ContractTemplates.noTemplatesDescription')}
         </p>
         <Button onClick={handleNewTemplate}>{t('ContractTemplates.newTemplate')}</Button>
@@ -102,25 +102,25 @@ function TemplatesList() {
   }
 
   return (
-    <div className="grid gap-2 md:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4 md:mt-6">
+    <div className="mt-4 grid gap-2 md:mt-6 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {templates.map((template) => (
         <Card
           key={template.id}
-          className="hover:shadow-md transition-shadow cursor-pointer p-2 gap-2 min-w-0 overflow-hidden"
+          className="min-w-0 cursor-pointer gap-2 overflow-hidden p-2 transition-shadow hover:shadow-md"
           onDoubleClick={() => handleDoubleClick(template)}
         >
           <CardHeader className="p-2 pb-1">
             <div className="flex items-start justify-between gap-1.5">
-              <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                <div className="rounded bg-primary/10 p-1 shrink-0">
-                  <FileText className="h-3.5 w-3.5 text-primary" />
+              <div className="flex min-w-0 flex-1 items-start gap-1.5">
+                <div className="bg-primary/10 shrink-0 rounded p-1">
+                  <FileText className="text-primary h-3.5 w-3.5" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-sm truncate leading-tight" title={template.title}>
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="truncate text-sm leading-tight" title={template.title}>
                     {template.title}
                   </CardTitle>
                   <CardDescription className="mt-0.5">
-                    <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                    <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
                       {template.type}
                     </Badge>
                   </CardDescription>
@@ -131,7 +131,7 @@ function TemplatesList() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 -mr-1"
+                    className="-mr-1 h-6 w-6"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreVertical className="h-3.5 w-3.5" />
@@ -155,13 +155,13 @@ function TemplatesList() {
           </CardHeader>
           <CardContent className="p-2 pt-1">
             <div className="space-y-0.5 text-xs">
-              <div className="flex items-center text-muted-foreground min-w-0">
+              <div className="text-muted-foreground flex min-w-0 items-center">
                 <FileText className="mr-1 h-3 w-3 shrink-0" />
-                <span className="truncate min-w-0 flex-1" title={template.file_path}>
+                <span className="min-w-0 flex-1 truncate" title={template.file_path}>
                   {template.file_path}
                 </span>
               </div>
-              <div className="flex items-center text-muted-foreground">
+              <div className="text-muted-foreground flex items-center">
                 <Calendar className="mr-1 h-3 w-3 shrink-0" />
                 <span>{formatDate(template.updated_at, i18n.language)}</span>
               </div>

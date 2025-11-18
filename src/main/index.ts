@@ -23,19 +23,16 @@ const log = (() => {
 // Log uncaught exceptions
 process.on('uncaughtException', (error) => {
   log?.error('Uncaught Exception:', error)
-  console.error('Uncaught Exception:', error)
 })
 
 process.on('unhandledRejection', (reason) => {
   log?.error('Unhandled Rejection:', reason)
-  console.error('Unhandled Rejection:', reason)
 })
 
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
   log?.info('Creating main window...')
-  console.log('Creating main window...')
 
   try {
     // Create the browser window.
@@ -54,11 +51,9 @@ function createWindow(): void {
     })
 
     log?.info('Main window created successfully')
-    console.log('Main window created successfully')
 
     mainWindow.on('ready-to-show', () => {
       log?.info('Main window ready to show')
-      console.log('Main window ready to show')
       mainWindow?.show()
     })
 
@@ -69,7 +64,6 @@ function createWindow(): void {
 
     mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
       log?.error('Failed to load:', errorCode, errorDescription)
-      console.error('Failed to load:', errorCode, errorDescription)
     })
 
     mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -81,28 +75,28 @@ function createWindow(): void {
     // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       log?.info('Loading dev URL:', process.env['ELECTRON_RENDERER_URL'])
-      console.log('Loading dev URL:', process.env['ELECTRON_RENDERER_URL'])
       mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     } else {
       const indexPath = join(__dirname, '../renderer/index.html')
       log?.info('Loading production HTML:', indexPath)
-      console.log('Loading production HTML:', indexPath)
       mainWindow.loadFile(indexPath)
     }
   } catch (error) {
     log?.error('Error creating window:', error)
-    console.error('Error creating window:', error)
     throw error
   }
 }
 
 function setupAutoUpdate(): void {
   if (log) autoUpdater.logger = log
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.allowPrerelease = false
+  autoUpdater.allowDowngrade = false
   // For private GitHub releases, uncomment and pass a token via env:
   autoUpdater.requestHeaders = {
     Authorization: `token ${process.env.GH_TOKEN ?? ''}`
   }
-
   autoUpdater.on('checking-for-update', () => {
     mainWindow?.webContents.send('updater:status', { state: 'checking' })
   })
@@ -131,6 +125,10 @@ function setupAutoUpdate(): void {
     })
   })
   autoUpdater.on('update-downloaded', async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      log?.warn('Main window not available for update dialog')
+      return
+    }
     const res = await dialog.showMessageBox(mainWindow!, {
       type: 'question',
       buttons: ['Restart now', 'Later'],
@@ -140,7 +138,9 @@ function setupAutoUpdate(): void {
       detail: 'Restart the app to apply the update?'
     })
     if (res.response === 0) {
-      autoUpdater.quitAndInstall()
+      setImmediate(() => {
+        autoUpdater.quitAndInstall(false, true)
+      })
     } else {
       mainWindow?.webContents.send('updater:status', { state: 'downloaded' })
     }
@@ -154,7 +154,6 @@ app
   .whenReady()
   .then(async () => {
     log?.info('App is ready')
-    console.log('App is ready')
 
     try {
       // Set app user model id for windows
@@ -171,53 +170,67 @@ app
       ipcMain.on('ping', () => console.log('pong'))
 
       ipcMain.handle('updater:check-now', async () => {
-        const result = await autoUpdater.checkForUpdates()
-        return { version: result?.updateInfo?.version ?? null }
+        try {
+          log?.info('Manual update check initiated')
+          const result = await autoUpdater.checkForUpdates()
+          log?.info('Update check result:', result?.updateInfo?.version)
+          return {
+            version: result?.updateInfo?.version ?? null,
+            currentVersion: app.getVersion()
+          }
+        } catch (error) {
+          log?.error('Update check failed:', error)
+          throw new Error(
+            `Update check failed: ${error instanceof Error ? error.message : String(error)}`
+          )
+        }
       })
 
       // Initialize database
       log?.info('Initializing database...')
-      console.log('Initializing database...')
       await initializeDatabase()
       log?.info('Database initialized successfully')
-      console.log('Database initialized successfully')
 
       // Start backend server
       log?.info('Starting backend server...')
-      console.log('Starting backend server...')
       const port = await startServer(3000)
       log?.info(`Backend server started on port ${port}`)
-      console.log(`Backend server started on port ${port}`)
 
       // Expose backend URL to renderer via IPC
       ipcMain.handle('backend:get-url', () => `http://localhost:${port}`)
 
       // Setup file manager handlers BEFORE creating window
       log?.info('Setting up file manager handlers...')
-      console.log('Setting up file manager handlers...')
       setupFileManagerHandlers()
       log?.info('File manager handlers set up successfully')
-      console.log('File manager handlers set up successfully')
 
       createWindow()
 
       if (!is.dev) {
         log?.info('Production mode: Setting up auto-update')
-        console.log('Production mode: Setting up auto-update')
         setupAutoUpdate()
-        autoUpdater.checkForUpdatesAndNotify()
+
+        // Wait for window to be ready before checking for updates
+        if (mainWindow) {
+          mainWindow.webContents.once('did-finish-load', () => {
+            setTimeout(() => {
+              log?.info('Performing initial update check')
+              autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+                log?.error('Initial update check failed:', err)
+              })
+            }, 3000) // 3 second delay for macOS
+          })
+        }
       }
 
       app.on('activate', function () {
         log?.info('App activated')
-        console.log('App activated')
         // On macOS it's common to re-create a window in the app when the
         // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
       })
     } catch (error) {
       log?.error('Error during app initialization:', error)
-      console.error('Error during app initialization:', error)
 
       // Show error dialog
       dialog.showErrorBox(
@@ -230,7 +243,6 @@ app
   })
   .catch((error) => {
     log?.error('Error in app.whenReady():', error)
-    console.error('Error in app.whenReady():', error)
 
     dialog.showErrorBox(
       'Application Startup Error',
@@ -252,16 +264,13 @@ app.on('window-all-closed', () => {
 // Cleanup on quit
 app.on('before-quit', async () => {
   log?.info('App is quitting, cleaning up...')
-  console.log('App is quitting, cleaning up...')
 
   try {
     await stopServer()
     closeDatabase()
     log?.info('Cleanup completed')
-    console.log('Cleanup completed')
   } catch (error) {
     log?.error('Error during cleanup:', error)
-    console.error('Error during cleanup:', error)
   }
 })
 

@@ -32,12 +32,27 @@ interface ListOptions {
 const rootPaths = new Map<number, string>()
 
 /**
+ * Normalize path separators for cross-platform compatibility
+ */
+function normalizePath(filePath: string): string {
+  // Replace all backslashes with forward slashes
+  let normalized = filePath.replace(/\\/g, '/')
+
+  // Use path.normalize to handle platform-specific format
+  normalized = path.normalize(normalized)
+
+  return normalized
+}
+
+/**
  * Normalize and validate path is within root
  */
 function validatePath(rootPath: string, targetPath: string): string {
-  const normalized = path.normalize(targetPath)
-  const resolved = path.resolve(normalized)
-  const root = path.resolve(rootPath)
+  const normalizedTarget = normalizePath(targetPath)
+  const normalizedRoot = normalizePath(rootPath)
+
+  const resolved = path.resolve(normalizedTarget)
+  const root = path.resolve(normalizedRoot)
 
   if (!resolved.startsWith(root)) {
     throw new Error('Path traversal attempt detected')
@@ -794,7 +809,8 @@ export function setupFileManagerHandlers(): void {
         }
 
         for (const targetPath of paths) {
-          const validatedPath = validatePath(rootPath, targetPath)
+          const normalizedPath = normalizePath(targetPath)
+          const validatedPath = validatePath(rootPath, normalizedPath)
           logger.log('[DEBUG] Removing:', validatedPath, 'toTrash:', options.toTrash)
 
           try {

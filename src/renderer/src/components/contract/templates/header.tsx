@@ -5,13 +5,16 @@ import ContarctTemplateDialog from '@/components/contract/templates/template-dia
 
 function Header() {
   const { t } = useTranslation()
+  const hanldeRefresh = () => {
+    window.location.reload()
+  }
 
   return (
     <header className="flex w-full items-center justify-between border-b p-2">
       <h1 className="text-2xl font-bold">{t('ContractTemplates.title')}</h1>
       <div id="actions" className="flex items-center space-x-2">
         <ContarctTemplateDialog />
-        <Button variant="secondary" size="sm">
+        <Button variant="secondary" size="sm" onClick={hanldeRefresh}>
           <RefreshCcw />
         </Button>
       </div>

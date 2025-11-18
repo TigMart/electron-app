@@ -242,6 +242,119 @@ export function setupFileManagerHandlers(): void {
 
     logger.log('[FileManager] selectFolder handler registered')
 
+    // Select file dialog (for choosing .docx files)
+    ipcMain.handle('fileManager:selectFile', async (event, options?: { filters?: any[] }) => {
+      logger.log('[FileManager] selectFile handler called')
+      const window = BrowserWindow.fromWebContents(event.sender)
+
+      if (!window) {
+        throw new Error('Could not find browser window')
+      }
+
+      const result = await dialog.showOpenDialog(window, {
+        properties: ['openFile'],
+        title: 'Select File',
+        filters: options?.filters || [
+          { name: 'Word Documents', extensions: ['docx'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      })
+
+      if (result.canceled || !result.filePaths[0]) {
+        return null
+      }
+
+      return result.filePaths[0]
+    })
+
+    // Set root path programmatically (for loading from settings)
+    ipcMain.handle('fileManager:setRootPath', async (event, folderPath: string) => {
+      logger.log('[FileManager] setRootPath handler called:', folderPath)
+      const window = BrowserWindow.fromWebContents(event.sender)
+
+      if (!window) {
+        throw new Error('Could not find browser window')
+      }
+
+      const windowId = window.id
+      rootPaths.set(windowId, folderPath)
+      logger.log('[FileManager] Root path set:', folderPath, 'for window:', windowId)
+
+      return true
+    })
+
+    // Import external file into root directory (for template creation)
+    ipcMain.handle(
+      'fileManager:importFile',
+      async (
+        event,
+        externalFilePath: string,
+        destPath: string,
+        options?: { overwrite?: boolean; keepBoth?: boolean }
+      ) => {
+        logger.log('[FileManager] importFile called:', externalFilePath, 'to', destPath, options)
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
+
+        if (!rootPath) {
+          throw new Error('No root folder selected')
+        }
+
+        // Validate destination is within root
+        const validatedDest = validatePath(rootPath, destPath)
+
+        // Source can be anywhere on disk, no validation needed
+        const fileName = path.basename(externalFilePath)
+        let targetPath = path.join(validatedDest, fileName)
+
+        // Check if target already exists
+        const fileExists = await fs.stat(targetPath).catch(() => null)
+
+        if (fileExists) {
+          if (options?.overwrite) {
+            // Overwrite the existing file
+            logger.log('[FileManager] Overwriting existing file:', fileName)
+          } else if (options?.keepBoth) {
+            // Generate unique name only when keepBoth is explicitly requested
+            const ext = path.extname(fileName)
+            const baseName = ext ? fileName.slice(0, -ext.length) : fileName
+
+            let counter = 1
+            let newFileName = `${baseName} (${counter})${ext}`
+            targetPath = path.join(validatedDest, newFileName)
+
+            while (await fs.stat(targetPath).catch(() => null)) {
+              counter++
+              newFileName = `${baseName} (${counter})${ext}`
+              targetPath = path.join(validatedDest, newFileName)
+            }
+
+            logger.log('[FileManager] Keeping both, using unique name:', newFileName)
+          } else {
+            // No options - file exists, return conflict status
+            logger.log('[FileManager] File exists, returning conflict:', fileName)
+            return {
+              conflict: true,
+              fileName: fileName
+            }
+          }
+        }
+
+        // Validate final target is in root
+        validatePath(rootPath, targetPath)
+
+        // Copy the file
+        await copyRecursive(externalFilePath, targetPath)
+        logger.log('[FileManager] File imported successfully to:', targetPath)
+
+        // Return the relative path for database storage
+        return {
+          conflict: false,
+          fileName: path.basename(targetPath)
+        }
+      }
+    )
+
     // List files in directory
     ipcMain.handle(
       'fileManager:listFiles',
@@ -354,6 +467,36 @@ export function setupFileManagerHandlers(): void {
         logger.log('[DEBUG] Folder created successfully')
       }
     )
+
+    // Create file (for Word templates)
+    ipcMain.handle('fileManager:createFile', async (event, filePath: string) => {
+      logger.log('[DEBUG] IPC createFile called:', filePath)
+      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+      const rootPath = windowId ? rootPaths.get(windowId) : null
+
+      if (!rootPath) {
+        logger.error('[DEBUG] No root path for window:', windowId)
+        throw new Error('No root folder selected')
+      }
+
+      const validatedPath = validatePath(rootPath, filePath)
+      logger.log('[DEBUG] Creating file at:', validatedPath)
+
+      // Check if already exists
+      try {
+        await fs.access(validatedPath)
+        logger.error('[DEBUG] File already exists:', validatedPath)
+        throw new Error('File already exists')
+      } catch (error: any) {
+        if (error.code !== 'ENOENT') throw error
+      }
+
+      // Create an empty .docx file
+      // A minimal valid DOCX file is a ZIP archive with specific structure
+      // For simplicity, we'll create an empty file and let Word handle it
+      await fs.writeFile(validatedPath, Buffer.alloc(0))
+      logger.log('[DEBUG] File created successfully')
+    })
 
     // Validate filename
     ipcMain.handle(
@@ -673,51 +816,83 @@ export function setupFileManagerHandlers(): void {
     )
 
     // Copy files/folders
-    ipcMain.handle('fileManager:copy', async (event, sourcePaths: string[], destPath: string) => {
-      logger.log('[DEBUG] IPC copy called:', sourcePaths, 'to', destPath)
-      const windowId = BrowserWindow.fromWebContents(event.sender)?.id
-      const rootPath = windowId ? rootPaths.get(windowId) : null
+    ipcMain.handle(
+      'fileManager:copy',
+      async (event, sourcePaths: string[], destPath: string, options?: { keepBoth?: boolean }) => {
+        logger.log('[DEBUG] IPC copy called:', sourcePaths, 'to', destPath, 'options:', options)
+        const windowId = BrowserWindow.fromWebContents(event.sender)?.id
+        const rootPath = windowId ? rootPaths.get(windowId) : null
 
-      if (!rootPath) {
-        logger.error('[DEBUG] No root path for window:', windowId)
-        throw new Error('No root folder selected')
-      }
-
-      const validatedDest = validatePath(rootPath, destPath)
-
-      for (const sourcePath of sourcePaths) {
-        const validatedSource = validatePath(rootPath, sourcePath)
-        const fileName = path.basename(validatedSource)
-        let targetPath = path.join(validatedDest, fileName)
-        logger.log('[DEBUG] Copying:', validatedSource, 'to', targetPath)
-
-        // Check if target already exists, generate unique name if needed
-        if (await fs.stat(targetPath).catch(() => null)) {
-          const ext = path.extname(fileName)
-          const baseName = ext ? fileName.slice(0, -ext.length) : fileName
-
-          let counter = 1
-          let newFileName = `${baseName} - Copy${ext}`
-          targetPath = path.join(validatedDest, newFileName)
-
-          // Keep trying until we find a unique name
-          while (await fs.stat(targetPath).catch(() => null)) {
-            counter++
-            newFileName = `${baseName} - Copy ${counter}${ext}`
-            targetPath = path.join(validatedDest, newFileName)
-          }
-
-          logger.log('[DEBUG] Target exists, using unique name:', newFileName)
+        if (!rootPath) {
+          logger.error('[DEBUG] No root path for window:', windowId)
+          throw new Error('No root folder selected')
         }
 
-        // Validate target is in root
-        validatePath(rootPath, targetPath)
+        logger.log('[DEBUG] Root path:', rootPath)
 
-        await copyRecursive(validatedSource, targetPath)
-        logger.log('[DEBUG] Copied successfully')
+        // Validate destination (can be relative or absolute)
+        const validatedDest = path.isAbsolute(destPath)
+          ? destPath
+          : validatePath(rootPath, destPath)
+
+        logger.log('[DEBUG] Validated destination:', validatedDest)
+
+        for (const sourcePath of sourcePaths) {
+          logger.log('[DEBUG] Processing source:', sourcePath)
+
+          // Source is always absolute in this case
+          const validatedSource = path.isAbsolute(sourcePath)
+            ? sourcePath
+            : validatePath(rootPath, sourcePath)
+
+          logger.log('[DEBUG] Validated source:', validatedSource)
+
+          const fileName = path.basename(validatedSource)
+          let targetPath = path.join(validatedDest, fileName)
+
+          logger.log('[DEBUG] Initial target path:', targetPath)
+
+          // Check if target already exists
+          const existing = await fs.stat(targetPath).catch(() => null)
+
+          if (existing) {
+            if (options?.keepBoth) {
+              // 🔁 KEEP BOTH: generate unique name: "name - Copy.ext", "name - Copy 2.ext", ...
+              const ext = path.extname(fileName)
+              const baseName = ext ? fileName.slice(0, -ext.length) : fileName
+
+              let counter = 1
+              let newFileName = `${baseName} - Copy${ext}`
+              targetPath = path.join(validatedDest, newFileName)
+
+              while (await fs.stat(targetPath).catch(() => null)) {
+                counter++
+                newFileName = `${baseName} - Copy ${counter}${ext}`
+                targetPath = path.join(validatedDest, newFileName)
+              }
+              logger.log('[DEBUG] Target exists, using unique name:', newFileName)
+
+              // Copy the file
+              await copyRecursive(validatedSource, targetPath)
+              logger.log('[DEBUG] Copied successfully to:', targetPath)
+
+              // Return just the filename
+              return newFileName
+            } else {
+              // 🧹 OVERWRITE: remove existing target then copy
+              logger.log('[DEBUG] Target exists, overwriting:', targetPath)
+              await fs.rm(targetPath, { recursive: true, force: true })
+            }
+          }
+
+          await copyRecursive(validatedSource, targetPath)
+          logger.log('[DEBUG] Copied successfully to:', targetPath)
+        }
+
+        logger.log('[DEBUG] All items copied')
+        return path.basename(sourcePaths[0])
       }
-      logger.log('[DEBUG] All items copied')
-    })
+    )
 
     // Move files/folders
     ipcMain.handle('fileManager:move', async (event, sourcePaths: string[], destPath: string) => {

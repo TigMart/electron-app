@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { IconInnerShadowTop } from '@tabler/icons-react'
 
-import { NavMain } from '@/components/nav-main'
+import { NavMain } from '@/components/layout/nav-main'
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from '@/components/ui/sidebar'
-import CheckForUpdates from './helper/check-update'
+import CheckForUpdates from '../helper/check-update'
 import { data } from '@/constants/navigation'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

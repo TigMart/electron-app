@@ -5,8 +5,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '../ui/dialog'
-import { Button } from '../ui/button'
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { useTranslation } from 'react-i18next'
 
 interface DeleteConfirmDialogProps {
   open: boolean
@@ -21,20 +22,18 @@ export function DeleteConfirmDialog({
   onConfirm,
   itemCount
 }: DeleteConfirmDialogProps) {
+  const { t } = useTranslation()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete {itemCount} item(s)?</DialogTitle>
-          <DialogDescription>
-            {itemCount === 1
-              ? 'This item will be moved to trash. You can restore it later.'
-              : `These ${itemCount} items will be moved to trash. You can restore them later.`}
-          </DialogDescription>
+          <DialogTitle>{t('DeleteDialog.title', { count: itemCount })}</DialogTitle>
+          <DialogDescription>{t('DeleteDialog.message', { count: itemCount })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('Common.cancel')}
           </Button>
           <Button
             variant="destructive"
@@ -43,7 +42,7 @@ export function DeleteConfirmDialog({
               onOpenChange(false)
             }}
           >
-            Delete
+            {t('Common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

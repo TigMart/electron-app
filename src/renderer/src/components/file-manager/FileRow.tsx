@@ -10,9 +10,10 @@ import {
   IconExternalLink,
   IconFolderOpen
 } from '@tabler/icons-react'
-import type { FileItem } from '../../types/fileManager'
-import { Checkbox } from '../ui/checkbox'
+import type { FileItem } from '@/types/fileManager'
+import { Checkbox } from '@/components/ui/checkbox'
 import { formatFileSize, formatDate } from '../../lib/utils'
+import { useTranslation } from 'react-i18next'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -20,15 +21,16 @@ import {
   ContextMenuSeparator,
   ContextMenuShortcut,
   ContextMenuTrigger
-} from '../ui/context-menu'
+} from '@/components/ui/context-menu'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '../ui/dropdown-menu'
-import { Button } from '../ui/button'
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+import { Edit } from 'lucide-react'
 
 interface FileRowProps {
   file: FileItem
@@ -39,6 +41,7 @@ interface FileRowProps {
   onDelete?: () => void
   onCopy?: () => void
   onCut?: () => void
+  onEditTemplate?: () => void
   onOpenExternal?: () => void
   onOpenInExplorer?: () => void
 }
@@ -52,9 +55,11 @@ export function FileRow({
   onDelete,
   onCopy,
   onCut,
+  onEditTemplate,
   onOpenExternal,
   onOpenInExplorer
 }: FileRowProps) {
+  const { t } = useTranslation()
   const [isRenaming, setIsRenaming] = useState(false)
   const [editValue, setEditValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -97,19 +102,22 @@ export function FileRow({
   }
 
   const handleConfirmRename = () => {
-    if (editValue.trim() && editValue !== file.name) {
-      // For files, add back the extension if not present
-      let finalName = editValue.trim()
+    const trimmedValue = editValue.trim()
 
-      if (file.type === 'file' && file.extension) {
-        const ext = `.${file.extension}`
-        if (!finalName.endsWith(ext)) {
-          finalName += ext
-        }
+    // For files, add back the extension if not present
+    let finalName = trimmedValue
+    if (file.type === 'file' && file.extension) {
+      const ext = `.${file.extension}`
+      if (!finalName.endsWith(ext)) {
+        finalName += ext
       }
+    }
 
+    // Only rename if name actually changed
+    if (trimmedValue && finalName !== file.name) {
       onRename(finalName)
     }
+
     setIsRenaming(false)
   }
 
@@ -136,12 +144,7 @@ export function FileRow({
           className={`hover:bg-muted/50 cursor-pointer ${isSelected ? 'bg-muted' : ''}`}
           onClick={(e) => {
             if (e.detail === 2 && !isRenaming) {
-              // Double click
-              if (file.type === 'directory') {
-                onOpen()
-              } else {
-                handleStartRename()
-              }
+              onOpen()
             }
           }}
         >
@@ -206,7 +209,7 @@ export function FileRow({
                   }}
                 >
                   <IconPencil size={16} className="mr-2" />
-                  Rename
+                  {t('FileManager.rename')}
                 </DropdownMenuItem>
                 {onCopy && (
                   <DropdownMenuItem
@@ -216,7 +219,7 @@ export function FileRow({
                     }}
                   >
                     <IconCopy size={16} className="mr-2" />
-                    Copy
+                    {t('FileManager.copy')}
                   </DropdownMenuItem>
                 )}
                 {onCut && (
@@ -227,7 +230,7 @@ export function FileRow({
                     }}
                   >
                     <IconCut size={16} className="mr-2" />
-                    Cut
+                    {t('FileManager.cut')}
                   </DropdownMenuItem>
                 )}
                 {onOpenExternal && file.type === 'file' && (
@@ -238,7 +241,18 @@ export function FileRow({
                     }}
                   >
                     <IconExternalLink size={16} className="mr-2" />
-                    Open
+                    {t('FileManager.openFile')}
+                  </DropdownMenuItem>
+                )}
+                {onEditTemplate && file.type !== 'directory' && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEditTemplate()
+                    }}
+                  >
+                    <Edit size={16} className="mr-2" />
+                    {t('ContractTemplates.editInfo')}
                   </DropdownMenuItem>
                 )}
                 {onOpenInExplorer && (
@@ -249,7 +263,7 @@ export function FileRow({
                     }}
                   >
                     <IconFolderOpen size={16} className="mr-2" />
-                    Show in Explorer
+                    {t('FileManager.openInExplorer')}
                   </DropdownMenuItem>
                 )}
                 {onDelete && (
@@ -263,7 +277,7 @@ export function FileRow({
                       className="text-destructive"
                     >
                       <IconTrash size={16} className="mr-2" />
-                      Delete
+                      {t('Common.delete')}
                     </DropdownMenuItem>
                   </>
                 )}

@@ -1,5 +1,6 @@
 import { IconUpload } from '@tabler/icons-react'
 import type { UploadProgress } from '@/types/fileManager'
+import { useTranslation } from 'react-i18next'
 
 interface DropZoneProps {
   isDragging: boolean
@@ -20,6 +21,8 @@ export function DropZone({
   onDrop,
   children
 }: DropZoneProps) {
+  const { t } = useTranslation()
+
   return (
     <div
       className="relative flex-1"
@@ -34,8 +37,8 @@ export function DropZone({
         <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/10">
           <div className="text-center">
             <IconUpload size={48} className="mx-auto mb-2 text-primary" />
-            <p className="text-lg font-semibold">Drop files here</p>
-            <p className="text-sm text-muted-foreground">PDF, DOC, DOCX, PNG, JPG, GIF, WebP</p>
+            <p className="text-lg font-semibold">{t('FileManager.dropFilesHere')}</p>
+            <p className="text-sm text-muted-foreground">{t('FileManager.supportedFormats')}</p>
           </div>
         </div>
       )}

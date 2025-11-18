@@ -5,6 +5,9 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import electronLog from 'electron-log'
 import { setupFileManagerHandlers } from './fileManager'
+import { initializeDatabase } from '../backend/db/migrations'
+import { startServer, stopServer } from '../backend/server'
+import { closeDatabase } from '../backend/db/connection'
 
 const log = (() => {
   try {
@@ -149,7 +152,7 @@ function setupAutoUpdate(): void {
 // Some APIs can only be used after this event occurs.
 app
   .whenReady()
-  .then(() => {
+  .then(async () => {
     log?.info('App is ready')
     console.log('App is ready')
 
@@ -171,6 +174,23 @@ app
         const result = await autoUpdater.checkForUpdates()
         return { version: result?.updateInfo?.version ?? null }
       })
+
+      // Initialize database
+      log?.info('Initializing database...')
+      console.log('Initializing database...')
+      await initializeDatabase()
+      log?.info('Database initialized successfully')
+      console.log('Database initialized successfully')
+
+      // Start backend server
+      log?.info('Starting backend server...')
+      console.log('Starting backend server...')
+      const port = await startServer(3000)
+      log?.info(`Backend server started on port ${port}`)
+      console.log(`Backend server started on port ${port}`)
+
+      // Expose backend URL to renderer via IPC
+      ipcMain.handle('backend:get-url', () => `http://localhost:${port}`)
 
       // Setup file manager handlers BEFORE creating window
       log?.info('Setting up file manager handlers...')
@@ -226,6 +246,22 @@ app
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
+  }
+})
+
+// Cleanup on quit
+app.on('before-quit', async () => {
+  log?.info('App is quitting, cleaning up...')
+  console.log('App is quitting, cleaning up...')
+
+  try {
+    await stopServer()
+    closeDatabase()
+    log?.info('Cleanup completed')
+    console.log('Cleanup completed')
+  } catch (error) {
+    log?.error('Error during cleanup:', error)
+    console.error('Error during cleanup:', error)
   }
 })
 

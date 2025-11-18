@@ -1,28 +1,35 @@
-import { useState } from 'react'
-import { Button } from '../components/ui/button'
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
 import { IconFolderOpen } from '@tabler/icons-react'
-import { Toaster } from 'sonner'
-import type { FileItem, BreadcrumbItem } from '../types/fileManager'
-import { logger } from '../utils/logger'
+import type { FileItem, BreadcrumbItem } from '@/types/fileManager'
+import { logger } from '../../utils/logger'
+import { useTranslation } from 'react-i18next'
+
+// Services
+import { getSettings } from '@/services/settings.service'
 
 // Hooks
-import { useDirectory } from '../hooks/file-manager/useDirectory'
-import { useFileOps } from '../hooks/file-manager/useFileOps'
-import { useDnD } from '../hooks/file-manager/useDnD'
-import { useToast } from '../hooks/file-manager/useToast'
+import { useDirectory } from '@/hooks/file-manager/useDirectory'
+import { useFileOps } from '@/hooks/file-manager/useFileOps'
+import { useDnD } from '@/hooks/file-manager/useDnD'
+import { useToast } from '@/hooks/useToast'
 
 // Components
-import { Toolbar } from '../components/file-manager/Toolbar'
-import { Breadcrumbs } from '../components/file-manager/Breadcrumbs'
-import { FileList } from '../components/file-manager/FileList'
-import { DropZone } from '../components/file-manager/DropZone'
-import { ConflictDialog } from '../components/file-manager/ConflictDialog'
-import { NewFolderDialog } from '../components/file-manager/NewFolderDialog'
-import { DeleteConfirmDialog } from '../components/file-manager/DeleteConfirmDialog'
-import { AlertDialog } from '../components/file-manager/AlertDialog'
-import { UploadProgressDialog } from '../components/file-manager/UploadProgressDialog'
+import { Toolbar } from '@/components/file-manager/Toolbar'
+import { Breadcrumbs } from '@/components/file-manager/Breadcrumbs'
+import { FileList } from '@/components/file-manager/FileList'
+import { DropZone } from '@/components/file-manager/DropZone'
+import { ConflictDialog } from '@/components/file-manager/ConflictDialog'
+import { NewFolderDialog } from '@/components/file-manager/NewFolderDialog'
+import { DeleteConfirmDialog } from '@/components/file-manager/DeleteConfirmDialog'
+import { ContractTemplateForm } from '@/components/tmp/contract-template-form'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AlertDialog } from '@/components/file-manager/AlertDialog'
+import { UploadProgressDialog } from '@/components/file-manager/UploadProgressDialog'
 
-export default function FileManagerPage() {
+export default function ContractTemplatesPage() {
+  const { t } = useTranslation()
+
   // State
   const [rootPath, setRootPath] = useState<string | null>(null)
   const [currentPath, setCurrentPath] = useState<string | null>(null)
@@ -34,6 +41,9 @@ export default function FileManagerPage() {
   } | null>(null)
   const [isPasting, setIsPasting] = useState(false)
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false)
+  const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false)
+  const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false)
+  const [selectedTemplateFile, setSelectedTemplateFile] = useState<string | null>(null)
   const [dialogKey, setDialogKey] = useState(0)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [filesToDelete, setFilesToDelete] = useState<string[]>([])
@@ -50,13 +60,18 @@ export default function FileManagerPage() {
 
   const toast = useToast()
 
-  // Directory listing
+  // Directory listing - show ALL files for navigation
   const { files, loading, refresh } = useDirectory(currentPath, {
     showHidden: false,
     sortBy: 'name',
     sortDirection: 'asc',
     searchQuery
   })
+
+  // Filter to show only directories and .docx files
+  const filteredFiles = files.filter(
+    (file) => file.type === 'directory' || file.name.toLowerCase().endsWith('.docx')
+  )
 
   // File operations
   const { rename, remove, copy, move, createFolder, renameConflict, resolveConflict } =
@@ -73,29 +88,51 @@ export default function FileManagerPage() {
     handleDrop
   } = useDnD(currentPath, refresh)
 
-  // Select folder
-  const selectFolder = async () => {
-    logger.debug('selectFolder called')
-    try {
-      const folder = await window.fileManager.selectFolder()
-      logger.debug('Selected folder:', folder)
-      if (folder) {
-        setRootPath(folder)
-        setCurrentPath(folder)
-        logger.debug('Root and current path set to:', folder)
-      } else {
-        logger.debug('No folder selected (user cancelled)')
+  // Load root path from settings on mount - ONLY ONCE
+  useEffect(() => {
+    const loadRootPathFromSettings = async () => {
+      try {
+        logger.debug('=== Loading root path from settings (MOUNT) ===')
+        const settings = await getSettings()
+        if (settings.contract_templates_dir) {
+          logger.debug('=== Setting root path:', settings.contract_templates_dir)
+          // Set root path in main process so file operations work
+          await window.fileManager.setRootPath(settings.contract_templates_dir)
+          setRootPath(settings.contract_templates_dir)
+          setCurrentPath(settings.contract_templates_dir)
+        }
+      } catch (err) {
+        toast.error('Failed to load settings: ' + (err as Error).message)
       }
-    } catch (error) {
-      console.error('[DEBUG] Error selecting folder:', error)
-      toast.error('Failed to select folder: ' + (error as Error).message)
     }
+
+    loadRootPathFromSettings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty deps - run only on mount
+
+  // Log when currentPath changes
+  useEffect(() => {
+    logger.debug('=== ✅ CURRENT PATH CHANGED ===')
+    logger.debug('New currentPath:', currentPath)
+    logger.debug('Files count:', files.length)
+    logger.debug('Loading:', loading)
+    logger.debug('================================')
+  }, [currentPath, files.length, loading])
+
+  // Navigate to settings
+  const goToSettings = () => {
+    window.location.hash = '/settings'
   }
 
   // Navigation
   const navigateTo = (path: string) => {
+    logger.debug('=== NAVIGATE TO CALLED ===')
+    logger.debug('Target path:', path)
+    logger.debug('Current rootPath:', rootPath)
+    logger.debug('Current currentPath:', currentPath)
     setCurrentPath(path)
     setSelectedFiles(new Set())
+    logger.debug('=== setCurrentPath called with:', path)
   }
 
   const goToParent = async () => {
@@ -105,10 +142,22 @@ export default function FileManagerPage() {
   }
 
   const handleFileOpen = async (file: FileItem) => {
-    if (file.type === 'directory') {
-      navigateTo(file.path)
-    } else {
-      await window.fileManager.openFile(file.path)
+    try {
+      logger.debug('=== HANDLE FILE OPEN ===')
+      logger.debug('File:', file.name)
+      logger.debug('Type:', file.type)
+      logger.debug('Path:', file.path)
+
+      if (file.type === 'directory') {
+        logger.debug('=== This is a DIRECTORY, navigating... ===')
+        navigateTo(file.path)
+      } else if (file.name.toLowerCase().endsWith('.docx')) {
+        logger.debug('=== This is a DOCX file, opening in Word... ===')
+        await window.fileManager.openFile(file.path)
+      }
+    } catch (error) {
+      logger.error('Failed to open file:', error)
+      toast.error('Failed to open: ' + (error as Error).message)
     }
   }
 
@@ -147,6 +196,31 @@ export default function FileManagerPage() {
     logger.debug('handleNewFolder called')
     setDialogKey((prev) => prev + 1)
     setNewFolderDialogOpen(true)
+  }
+
+  const handleNewTemplate = () => {
+    logger.debug('handleNewTemplate called')
+    setSelectedTemplateFile(null)
+    setNewTemplateDialogOpen(true)
+  }
+
+  const handleEditTemplateInfo = (filePath: string) => {
+    logger.debug('handleEditTemplateInfo called for:', filePath)
+    // filePath from FileList is absolute, we need to convert to relative for the form
+    if (rootPath) {
+      const relativePath = filePath.substring(rootPath.length).replace(/^[/\\]/, '')
+      setSelectedTemplateFile(relativePath)
+    } else {
+      setSelectedTemplateFile(filePath)
+    }
+    setEditTemplateDialogOpen(true)
+  }
+
+  const handleTemplateFormSuccess = () => {
+    setNewTemplateDialogOpen(false)
+    setEditTemplateDialogOpen(false)
+    setSelectedTemplateFile(null)
+    refresh()
   }
 
   const handleDelete = () => {
@@ -235,11 +309,11 @@ export default function FileManagerPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <IconFolderOpen size={64} className="text-muted-foreground" />
-        <h2 className="text-2xl font-semibold">No Folder Selected</h2>
-        <p className="text-muted-foreground">Select a folder to get started</p>
-        <Button onClick={selectFolder}>
+        <h2 className="text-2xl font-semibold">{t('ContractTemplates.noRootDirectory')}</h2>
+        <p className="text-muted-foreground">{t('ContractTemplates.configureInSettings')}</p>
+        <Button onClick={goToSettings}>
           <IconFolderOpen className="mr-2" size={16} />
-          Select Folder
+          {t('Navigation.Settings')}
         </Button>
       </div>
     )
@@ -247,15 +321,28 @@ export default function FileManagerPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Toaster position="top-right" />
-
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold">File Manager</h1>
-          <Button variant="outline" size="sm" onClick={selectFolder}>
-            Change Folder
-          </Button>
+          <h1 className="text-2xl font-bold">{t('ContractTemplates.title')}</h1>
+          <div className="flex gap-2">
+            <Button variant="default" size="sm" onClick={handleNewTemplate}>
+              {t('ContractTemplates.newTemplate')}
+            </Button>
+            {selectedFiles.size === 1 &&
+              Array.from(selectedFiles)[0].toLowerCase().endsWith('.docx') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditTemplateInfo(Array.from(selectedFiles)[0])}
+                >
+                  {t('ContractTemplates.editInfo')}
+                </Button>
+              )}
+            <Button variant="outline" size="sm" onClick={goToSettings}>
+              {t('Navigation.Settings')}
+            </Button>
+          </div>
         </div>
         <Breadcrumbs items={breadcrumbs} onNavigate={navigateTo} />
       </div>
@@ -286,11 +373,11 @@ export default function FileManagerPage() {
       >
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('Common.loading')}</p>
           </div>
         ) : (
           <FileList
-            files={files}
+            files={filteredFiles}
             selectedFiles={selectedFiles}
             onFileSelect={handleFileSelect}
             onFileRename={rename}
@@ -304,6 +391,7 @@ export default function FileManagerPage() {
               setClipboard({ paths: [filePath], operation: 'move' })
               toast.info('1 item cut')
             }}
+            onFileEditTemplate={(filePath) => handleEditTemplateInfo(filePath)}
             onFileOpenExternal={(filePath) => window.fileManager.openFile(filePath)}
             onFileOpenInExplorer={(filePath) => window.fileManager.openInExplorer(filePath)}
             onNavigateUp={goToParent}
@@ -326,6 +414,38 @@ export default function FileManagerPage() {
           }
         }}
       />
+
+      {/* New/Edit Template Dialog */}
+      <Dialog
+        open={newTemplateDialogOpen || editTemplateDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setNewTemplateDialogOpen(false)
+            setEditTemplateDialogOpen(false)
+            setSelectedTemplateFile(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedTemplateFile
+                ? t('ContractTemplates.editInfo')
+                : t('ContractTemplates.newTemplate')}
+            </DialogTitle>
+          </DialogHeader>
+          <ContractTemplateForm
+            initialFilePath={selectedTemplateFile}
+            currentDirectory={currentPath}
+            onSuccess={handleTemplateFormSuccess}
+            onCancel={() => {
+              setNewTemplateDialogOpen(false)
+              setEditTemplateDialogOpen(false)
+              setSelectedTemplateFile(null)
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog

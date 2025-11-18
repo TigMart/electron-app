@@ -34,11 +34,22 @@ declare global {
           bytesPerSecond: number
         }) => void
       ) => () => void
+      getBackendUrl: () => Promise<string>
     }
     fileManager: {
       selectFolder: () => Promise<string | null>
+      selectFile: (options?: {
+        filters?: Array<{ name: string; extensions: string[] }>
+      }) => Promise<string | null>
+      setRootPath: (folderPath: string) => Promise<boolean>
+      importFile: (
+        externalFilePath: string,
+        destPath: string,
+        options?: { overwrite?: boolean; keepBoth?: boolean }
+      ) => Promise<{ conflict: boolean; fileName: string }>
       listFiles: (folderPath: string, options: ListOptions) => Promise<FileItem[]>
       createFolder: (parentPath: string, folderName: string) => Promise<void>
+      createFile: (filePath: string) => Promise<void>
       rename: (oldPath: string, newName: string, options?: RenameOptions) => Promise<RenameResult>
       validateFileName: (name: string, oldName?: string) => Promise<ValidationError[]>
       resolveConflict: (
@@ -47,7 +58,11 @@ declare global {
         resolution: ConflictResolution
       ) => Promise<{ success: boolean; finalName?: string; cancelled?: boolean }>
       remove: (paths: string[], options: DeleteOptions) => Promise<void>
-      copy: (sourcePaths: string[], destPath: string) => Promise<void>
+      copy: (
+        sourcePaths: string[],
+        destPath: string,
+        options?: { keepBoth?: boolean }
+      ) => Promise<string>
       move: (sourcePaths: string[], destPath: string) => Promise<void>
       upload: (
         files: UploadFile[],

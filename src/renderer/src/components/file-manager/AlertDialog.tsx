@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface AlertDialogProps {
   open: boolean
@@ -18,6 +19,8 @@ interface AlertDialogProps {
 }
 
 export function AlertDialog({ open, onOpenChange, title, message, details }: AlertDialogProps) {
+  const { t } = useTranslation()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -69,9 +72,9 @@ export function AlertDialog({ open, onOpenChange, title, message, details }: Ale
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Skip
+            {t('Common.ok')}
           </Button>
-          <Button onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={() => onOpenChange(false)}>{t('Common.cancel')}</Button>
         </DialogFooter>
 
         {details && (

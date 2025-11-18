@@ -1,4 +1,4 @@
-import { IconContract, IconDashboard, IconFolder } from '@tabler/icons-react'
+import { IconContract, IconDashboard, IconSettings } from '@tabler/icons-react'
 import { ROUTES } from './routes'
 
 export const data = {
@@ -9,14 +9,14 @@ export const data = {
       icon: IconDashboard
     },
     {
-      title: 'Navigation.Contracts',
-      url: ROUTES.CONTRACTS,
+      title: 'Navigation.ContractTemplates',
+      url: ROUTES.CONTRACT_TEMPLATES,
       icon: IconContract
     },
     {
-      title: 'Navigation.Files',
-      url: ROUTES.FILES,
-      icon: IconFolder
+      title: 'Navigation.Settings',
+      url: ROUTES.SETTINGS,
+      icon: IconSettings
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { type Icon } from '@tabler/icons-react'
 import { Link, useLocation } from 'react-router-dom'
-
+import { v4 as uuid } from 'uuid'
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -34,7 +34,7 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
+            <SidebarMenuItem key={uuid()}>
               <SidebarMenuButton tooltip={item.title} isActive={isActive(item.url)} asChild>
                 <Link to={item.url}>
                   {item.icon && <item.icon />}

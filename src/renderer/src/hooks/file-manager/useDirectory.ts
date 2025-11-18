@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react'
 import type { FileItem } from '@/types/fileManager'
-import { useToast } from './useToast'
+import { useToast } from '../useToast'
 
 interface UseDirectoryOptions {
   showHidden?: boolean

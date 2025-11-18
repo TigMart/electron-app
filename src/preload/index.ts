@@ -33,19 +33,31 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, payload: any): void => callback(payload)
     ipcRenderer.on('updater:progress', handler)
     return () => ipcRenderer.removeListener('updater:progress', handler)
-  }
+  },
+
+  // Backend API URL
+  getBackendUrl: () => ipcRenderer.invoke('backend:get-url')
 }
 
 // ---- File Manager API ----
 const fileManagerAPI = {
   // Folder selection
   selectFolder: () => ipcRenderer.invoke('fileManager:selectFolder'),
+  selectFile: (options?: { filters?: any[] }) =>
+    ipcRenderer.invoke('fileManager:selectFile', options),
+  setRootPath: (folderPath: string) => ipcRenderer.invoke('fileManager:setRootPath', folderPath),
+  importFile: (
+    externalFilePath: string,
+    destPath: string,
+    options?: { overwrite?: boolean; keepBoth?: boolean }
+  ) => ipcRenderer.invoke('fileManager:importFile', externalFilePath, destPath, options),
 
   // File operations
   listFiles: (folderPath: string, options: any) =>
     ipcRenderer.invoke('fileManager:listFiles', folderPath, options),
   createFolder: (parentPath: string, folderName: string) =>
     ipcRenderer.invoke('fileManager:createFolder', parentPath, folderName),
+  createFile: (filePath: string) => ipcRenderer.invoke('fileManager:createFile', filePath),
   rename: (oldPath: string, newName: string, options?: any) =>
     ipcRenderer.invoke('fileManager:rename', oldPath, newName, options),
   validateFileName: (name: string, oldName?: string) =>
@@ -54,8 +66,8 @@ const fileManagerAPI = {
     ipcRenderer.invoke('fileManager:resolveConflict', path, name, resolution),
   remove: (paths: string[], options: any) =>
     ipcRenderer.invoke('fileManager:remove', paths, options),
-  copy: (sourcePaths: string[], destPath: string) =>
-    ipcRenderer.invoke('fileManager:copy', sourcePaths, destPath),
+  copy: (sourcePaths: string[], destPath: string, options?: { keepBoth?: boolean }) =>
+    ipcRenderer.invoke('fileManager:copy', sourcePaths, destPath, options),
   move: (sourcePaths: string[], destPath: string) =>
     ipcRenderer.invoke('fileManager:move', sourcePaths, destPath),
   upload: (files: any[], destPath: string, options?: any) =>

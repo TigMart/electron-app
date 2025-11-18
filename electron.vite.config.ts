@@ -4,7 +4,14 @@ import { resolve } from 'path'
 import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      rollupOptions: {
+        output: {
+          assetFileNames: '[name][extname]'
+        }
+      }
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()]

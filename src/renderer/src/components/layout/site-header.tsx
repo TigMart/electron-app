@@ -1,7 +1,7 @@
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import SwitchLanguage from '@/components/helper/switch-language'
-import { ModeToggle } from './helper/mode-toggle'
+import { ModeToggle } from '@/components/helper/mode-toggle'
 
 export function SiteHeader() {
   return (

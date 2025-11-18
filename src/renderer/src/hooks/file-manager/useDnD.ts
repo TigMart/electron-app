@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { UploadFile, UploadProgress } from '@/types/fileManager'
-import { useToast } from './useToast'
+import { useToast } from '../useToast'
 import { logger } from '../../utils/logger'
 
 const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'gif', 'webp']

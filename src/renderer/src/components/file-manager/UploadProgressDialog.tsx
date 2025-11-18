@@ -3,6 +3,7 @@ import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { Loader2, FileIcon, CheckCircle2, XCircle } from 'lucide-react'
 import type { UploadProgress } from '@/types/fileManager'
+import { useTranslation } from 'react-i18next'
 
 interface UploadProgressDialogProps {
   open: boolean
@@ -15,6 +16,7 @@ export function UploadProgressDialog({
   uploadProgress,
   onCancel
 }: UploadProgressDialogProps) {
+  const { t } = useTranslation()
   const totalFiles = uploadProgress.length
   const completedFiles = uploadProgress.filter((p) => p.status === 'complete').length
   const failedFiles = uploadProgress.filter((p) => p.status === 'error').length
@@ -30,7 +32,7 @@ export function UploadProgressDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            Copying {totalFiles} item{totalFiles !== 1 ? 's' : ''}...
+            {t('UploadProgress.uploadingFiles', { count: totalFiles })}
           </DialogTitle>
         </DialogHeader>
 
@@ -39,7 +41,7 @@ export function UploadProgressDialog({
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                {completedFiles} of {totalFiles} items
+                {t('UploadProgress.overall', { completed: completedFiles, total: totalFiles })}
               </span>
               <span className="font-medium">{overallPercent}%</span>
             </div>
@@ -78,10 +80,12 @@ export function UploadProgressDialog({
 
                   {/* Status */}
                   {progress.status === 'complete' ? (
-                    <p className="text-xs text-green-600">Completed</p>
+                    <p className="text-xs text-green-600">{t('UploadProgress.completed')}</p>
                   ) : progress.status === 'error' ? (
                     <p className="text-xs text-destructive">
-                      Failed: {('error' in progress ? progress.error : null) || 'Unknown error'}
+                      {t('UploadProgress.failed', {
+                        error: ('error' in progress ? progress.error : null) || 'Unknown error'
+                      })}
                     </p>
                   ) : null}
                 </div>
@@ -93,7 +97,7 @@ export function UploadProgressDialog({
           {onCancel && (
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={onCancel}>
-                Cancel
+                {t('Common.cancel')}
               </Button>
             </div>
           )}

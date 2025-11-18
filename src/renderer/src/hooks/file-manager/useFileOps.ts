@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback } from 'react'
 import type { RenameConflict, ConflictResolution } from '../../types/fileManager'
-import { useToast } from './useToast'
+import { useToast } from '../useToast'
 import { logger } from '../../utils/logger'
 
 export function useFileOps(onRefresh: () => void) {

@@ -83,7 +83,7 @@ export interface UploadFile {
   path: string
   size: number
   type: string
-  file?: File // Optional File object when path is not available
+  file?: File
 }
 
 export interface UploadOptions {

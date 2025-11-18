@@ -5,7 +5,6 @@
 export const ROUTES = {
   DASHBOARD: '/',
   CONTRACT_TEMPLATES: '/contract-templates',
-  FILES: '/files',
   SETTINGS: '/settings',
   NOT_FOUND: '*'
 } as const
@@ -30,6 +29,5 @@ export interface RouteConfig {
 export const NAVIGATION_ROUTES: RouteConfig[] = [
   { path: ROUTES.DASHBOARD, label: 'Dashboard' },
   { path: ROUTES.CONTRACT_TEMPLATES, label: 'ContractTemplates' },
-  { path: ROUTES.FILES, label: 'Files' },
   { path: ROUTES.SETTINGS, label: 'Settings' }
 ]

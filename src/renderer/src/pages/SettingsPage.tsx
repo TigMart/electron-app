@@ -63,7 +63,6 @@ export default function SettingsPage() {
         contractTemplatesDir: contractTemplatesDir || null,
         generatedContractsDir: generatedContractsDir || null
       })
-      console.log('aaa')
       toast.success('Settings saved successfully')
       await loadSettings()
     } catch (error) {

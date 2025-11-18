@@ -4,6 +4,7 @@ import type {
   ICreateContractTemplateDTO,
   IUpdateContractTemplateDTO
 } from '../../../backend/types'
+import { logger } from '@/utils/logger'
 
 export async function getAllTemplates(): Promise<IContractTemplate[]> {
   const response = await api.get<IContractTemplate[]>('/api/contract-templates')
@@ -20,7 +21,7 @@ export async function getTemplateByFilePath(filePath: string): Promise<IContract
     const templates = await getAllTemplates()
     return templates.find((t) => t.file_path === filePath) || null
   } catch (error) {
-    console.error('Failed to get template by file path:', error)
+    logger.error('Failed to get template by file path:', error)
     return null
   }
 }

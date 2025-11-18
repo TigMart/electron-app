@@ -18,6 +18,7 @@ import { formatDate } from '@/utils/format'
 import { DeleteTemplateDialog } from '@/components/contract/templates/delete-template-dialog'
 import type { IContractTemplate } from '../../../../../backend/types'
 import { useAppStore } from '@/store'
+import { logger } from '@/utils/logger'
 
 function TemplatesList() {
   const { t, i18n } = useTranslation()
@@ -32,7 +33,7 @@ function TemplatesList() {
 
   const handleDoubleClick = async (template: IContractTemplate) => {
     if (!settings?.contract_templates_dir) {
-      console.error('Templates directory not configured')
+      logger.error('Templates directory not configured')
       return
     }
     const fullPath = `${settings.contract_templates_dir}\\${template.file_path}`

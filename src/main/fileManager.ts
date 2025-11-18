@@ -797,19 +797,32 @@ export function setupFileManagerHandlers(): void {
           const validatedPath = validatePath(rootPath, targetPath)
           logger.log('[DEBUG] Removing:', validatedPath, 'toTrash:', options.toTrash)
 
-          if (options.toTrash) {
-            // Use shell.trashItem for safe deletion
-            await shell.trashItem(validatedPath)
-          } else {
-            // Permanent deletion
-            const stats = await fs.stat(validatedPath)
-            if (stats.isDirectory()) {
-              await fs.rm(validatedPath, { recursive: true, force: true })
+          try {
+            if (options.toTrash) {
+              await shell.trashItem(validatedPath)
+
+              try {
+                await fs.access(validatedPath)
+                throw new Error(`Failed to move to trash: ${validatedPath}`)
+              } catch (error: any) {
+                if (error.code !== 'ENOENT') {
+                  throw error
+                }
+              }
             } else {
-              await fs.unlink(validatedPath)
+              // Permanent deletion
+              const stats = await fs.stat(validatedPath)
+              if (stats.isDirectory()) {
+                await fs.rm(validatedPath, { recursive: true, force: true })
+              } else {
+                await fs.unlink(validatedPath)
+              }
             }
+            logger.log('[DEBUG] Removed successfully:', validatedPath)
+          } catch (error) {
+            logger.error('[DEBUG] Failed to remove:', validatedPath, error)
+            throw new Error(`Failed to remove ${targetPath}: ${error}`)
           }
-          logger.log('[DEBUG] Removed successfully:', validatedPath)
         }
         logger.log('[DEBUG] All items removed')
       }

@@ -1,9 +1,9 @@
-import { getDatabase } from '../db/connection'
+import { getDatabase } from './index'
 import type {
   IContractTemplate,
   ICreateContractTemplateDTO,
   IUpdateContractTemplateDTO
-} from '../types'
+} from '../../types'
 
 /**
  * Get all contract templates
@@ -31,6 +31,20 @@ export function getTemplateById(id: number): IContractTemplate | null {
   `)
 
   return (stmt.get(id) as IContractTemplate) || null
+}
+
+/**
+ * Get a single contract template by file path
+ */
+export function getTemplateByPath(filePath: string): IContractTemplate | null {
+  const db = getDatabase()
+  const stmt = db.prepare(`
+    SELECT id, title, type, file_path, created_at, updated_at
+    FROM contract_templates
+    WHERE file_path = ?
+  `)
+
+  return (stmt.get(filePath) as IContractTemplate) || null
 }
 
 /**

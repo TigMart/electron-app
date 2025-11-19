@@ -33,10 +33,7 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, payload: any): void => callback(payload)
     ipcRenderer.on('updater:progress', handler)
     return () => ipcRenderer.removeListener('updater:progress', handler)
-  },
-
-  // Backend API URL
-  getBackendUrl: () => ipcRenderer.invoke('backend:get-url')
+  }
 }
 
 // ---- File Manager API ----
@@ -96,6 +93,27 @@ const fileManagerAPI = {
   }
 }
 
+// ---- Database API ----
+const databaseAPI = {
+  // Contract Templates
+  templates: {
+    getAll: () => ipcRenderer.invoke('db:templates:getAll'),
+    getById: (id: number) => ipcRenderer.invoke('db:templates:getById', id),
+    getByPath: (filePath: string) => ipcRenderer.invoke('db:templates:getByPath', filePath),
+    create: (data: any) => ipcRenderer.invoke('db:templates:create', data),
+    update: (id: number, data: any) => ipcRenderer.invoke('db:templates:update', id, data),
+    delete: (id: number) => ipcRenderer.invoke('db:templates:delete', id),
+    getByType: (type: string) => ipcRenderer.invoke('db:templates:getByType', type)
+  },
+
+  // Settings
+  settings: {
+    get: () => ipcRenderer.invoke('db:settings:get'),
+    update: (data: any) => ipcRenderer.invoke('db:settings:update', data),
+    reset: () => ipcRenderer.invoke('db:settings:reset')
+  }
+}
+
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
@@ -104,6 +122,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
     contextBridge.exposeInMainWorld('fileManager', fileManagerAPI)
+    contextBridge.exposeInMainWorld('database', databaseAPI)
   } catch (error) {
     console.error(error)
   }
@@ -114,4 +133,6 @@ if (process.contextIsolated) {
   window.api = api
   // @ts-ignore (define in dts)
   window.fileManager = fileManagerAPI
+  // @ts-ignore (define in dts)
+  window.database = databaseAPI
 }

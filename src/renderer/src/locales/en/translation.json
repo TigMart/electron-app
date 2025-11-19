@@ -48,7 +48,9 @@
     "size": "Size",
     "modified": "Modified",
     "ok": "OK",
-    "close": "Close"
+    "close": "Close",
+    "open": "Open",
+    "rife": "Reveal In File Explorer"
   },
   "FileManager": {
     "title": "File Manager",
@@ -105,7 +107,17 @@
     "templateNameConflict": "Template Name Conflict",
     "templateNameConflictMessage": "A template with this file name already exists in the database. What would you like to do?",
     "noTemplates": "No templates",
-    "noTemplatesDescription": "You haven't added any contract templates yet. Click the button below to create your first template."
+    "noTemplatesDescription": "You haven't added any contract templates yet. Click the button below to create your first template.",
+    "selectType": "Select template type",
+    "types": {
+      "contract": "Contract",
+      "agreement": "Agreement", 
+      "invoice": "Invoice",
+      "proposal": "Proposal",
+      "letter": "Letter",
+      "report": "Report",
+      "other": "Other"
+    }
     
 
 

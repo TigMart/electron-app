@@ -1,16 +1,17 @@
-import api from '@/lib/axios'
-import type { ISettings, IUpdateSettingsDTO } from '../../../backend/types'
+import type { ISettings, IUpdateSettingsDTO } from '../../../types'
 
 export async function getSettings(): Promise<ISettings> {
-  const response = await api.get<ISettings>('/api/settings')
-  return response.data
+  const settings = await window.database.settings.get()
+  if (!settings) {
+    throw new Error('Settings not found')
+  }
+  return settings
 }
 
 export async function updateSettings(data: IUpdateSettingsDTO): Promise<ISettings> {
-  const response = await api.put<ISettings>('/api/settings', data)
-  return response.data
+  return window.database.settings.update(data)
 }
 
-export async function resetSettings(): Promise<void> {
-  await api.delete('/api/settings')
+export async function resetSettings(): Promise<ISettings> {
+  return window.database.settings.reset()
 }

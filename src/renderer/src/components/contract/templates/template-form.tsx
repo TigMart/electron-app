@@ -13,15 +13,20 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form'
-import type {
-  ICreateContractTemplateDTO,
-  IUpdateContractTemplateDTO
-} from '../../../../../backend/types'
+import type { ICreateContractTemplateDTO, IUpdateContractTemplateDTO } from '../../../../../types'
 import useSettings from '@/hooks/use-settings'
 import useContractTemplates from '@/hooks/use-contract-templates'
 import { FileExistsDialog } from '@/components/helper/file-exists-dialog'
 import { useAppStore } from '@/store'
 import { useToast } from '@/hooks/useToast'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { TEMPLATE_TYPES } from '@/constants/template'
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').trim(),
@@ -321,9 +326,26 @@ export function ContractTemplateForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('ContractTemplates.templateType')}</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder={t('ContractTemplates.typePlaceholder')} />
-                </FormControl>
+                <Select
+                  onValueChange={(value) => {
+                    if (template && !value) return
+                    field.onChange(value)
+                  }}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={t('ContractTemplates.selectType')} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {TEMPLATE_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {t(`ContractTemplates.types.${type.value}`, type.label)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

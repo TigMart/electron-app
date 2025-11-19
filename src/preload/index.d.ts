@@ -11,8 +11,9 @@ import {
   UploadFile,
   UploadOptions,
   UploadResult,
-  UploadProgress
-} from '../renderer/src/types/fileManager'
+  UploadProgress,
+  IContractTemplate
+} from '../types'
 
 declare global {
   interface Window {
@@ -34,7 +35,6 @@ declare global {
           bytesPerSecond: number
         }) => void
       ) => () => void
-      getBackendUrl: () => Promise<string>
     }
     fileManager: {
       selectFolder: () => Promise<string | null>
@@ -76,6 +76,47 @@ declare global {
       onProgress: (callback: (operation: FileOperation) => void) => () => void
       onUploadProgress: (callback: (progress: UploadProgress) => void) => () => void
       saveTempFile: (fileName: string, buffer: Uint8Array) => Promise<string>
+    }
+    database: {
+      templates: {
+        getAll: () => Promise<Array<IContractTemplate>>
+        getById: (id: number) => Promise<IContractTemplate | null>
+        getByPath: (filePath: string) => Promise<IContractTemplate | null>
+        create: (data: {
+          title: string
+          type: string
+          filePath: string
+        }) => Promise<IContractTemplate>
+        update: (
+          id: number,
+          data: { title?: string; type?: string; filePath?: string }
+        ) => Promise<IContractTemplate | null>
+        delete: (id: number) => Promise<boolean>
+        getByType: (type: string) => Promise<Array<IContractTemplate>>
+      }
+      settings: {
+        get: () => Promise<{
+          id: number
+          contract_templates_dir: string | null
+          generated_contracts_dir: string | null
+          updated_at: string
+        } | null>
+        update: (data: {
+          contractTemplatesDir?: string | null
+          generatedContractsDir?: string | null
+        }) => Promise<{
+          id: number
+          contract_templates_dir: string | null
+          generated_contracts_dir: string | null
+          updated_at: string
+        }>
+        reset: () => Promise<{
+          id: number
+          contract_templates_dir: string | null
+          generated_contracts_dir: string | null
+          updated_at: string
+        }>
+      }
     }
   }
 }

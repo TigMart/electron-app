@@ -1,5 +1,5 @@
-import { getDatabase } from '../db/connection'
-import type { ISettings, IUpdateSettingsDTO } from '../types'
+import { getDatabase } from './index'
+import type { ISettings, IUpdateSettingsDTO } from '../../types'
 
 /**
  * Get settings (singleton - only one row exists)

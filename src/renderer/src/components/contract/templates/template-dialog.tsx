@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger
@@ -28,6 +29,7 @@ function ContractTemplateDialog() {
           <DialogTitle>
             {mode === 'edit' ? t('ContractTemplates.editInfo') : t('ContractTemplates.newTemplate')}
           </DialogTitle>
+          <DialogDescription />
         </DialogHeader>
         <ContractTemplateForm />
       </DialogContent>

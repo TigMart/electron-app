@@ -8,7 +8,7 @@
 import { ipcMain, dialog, shell, BrowserWindow, app } from 'electron'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { logger } from './utils/logger'
+import { logger } from '../utils/logger'
 
 interface FileItem {
   name: string

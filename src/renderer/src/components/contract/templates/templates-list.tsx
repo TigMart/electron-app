@@ -10,13 +10,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { FileText, MoreVertical, Pencil, Trash2, Calendar } from 'lucide-react'
+import { FileText, MoreVertical, Pencil, Trash2, Calendar, FolderOpen } from 'lucide-react'
 import useContractTemplates from '@/hooks/use-contract-templates'
 import useSettings from '@/hooks/use-settings'
 import { useTranslation } from 'react-i18next'
 import { formatDate } from '@/utils/format'
 import { DeleteTemplateDialog } from '@/components/contract/templates/delete-template-dialog'
-import type { IContractTemplate } from '../../../../../backend/types'
+import type { IContractTemplate } from '../../../../../types'
 import { useAppStore } from '@/store'
 import { logger } from '@/utils/logger'
 
@@ -38,6 +38,24 @@ function TemplatesList() {
     }
     const fullPath = `${settings.contract_templates_dir}\\${template.file_path}`
     await window.fileManager.openFile(fullPath)
+  }
+
+  const handleOpen = async (template: IContractTemplate) => {
+    if (!settings?.contract_templates_dir) {
+      logger.error('Templates directory not configured')
+      return
+    }
+    const fullPath = `${settings.contract_templates_dir}\\${template.file_path}`
+    await window.fileManager.openFile(fullPath)
+  }
+
+  const handleRevealInFileExplorer = async (template: IContractTemplate) => {
+    if (!settings?.contract_templates_dir) {
+      logger.error('Templates directory not configured')
+      return
+    }
+    const fullPath = `${settings.contract_templates_dir}\\${template.file_path}`
+    await window.fileManager.openInExplorer(fullPath)
   }
 
   const handleEdit = (template: IContractTemplate) => {
@@ -139,6 +157,14 @@ function TemplatesList() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleOpen(template)}>
+                    <FileText className="mr-2 h-3.5 w-3.5" />
+                    {t('Common.open')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleRevealInFileExplorer(template)}>
+                    <FolderOpen className="mr-2 h-3.5 w-3.5" />
+                    {t('Common.rife')}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleEdit(template)}>
                     <Pencil className="mr-2 h-3.5 w-3.5" />
                     {t('Common.edit')}

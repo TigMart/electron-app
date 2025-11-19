@@ -4,10 +4,9 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import electronLog from 'electron-log'
-import { setupFileManagerHandlers } from './fileManager'
-import { initializeDatabase } from '../backend/db/migrations'
-import { startServer, stopServer } from '../backend/server'
-import { closeDatabase } from '../backend/db/connection'
+import { setupFileManagerHandlers } from './ipc/file-manager'
+import { initializeDatabase, closeDatabase } from './database'
+import { setupDatabaseHandlers } from './ipc/handlers'
 
 const log = (() => {
   try {
@@ -188,16 +187,13 @@ app
 
       // Initialize database
       log?.info('Initializing database...')
-      await initializeDatabase()
+      initializeDatabase()
       log?.info('Database initialized successfully')
 
-      // Start backend server
-      log?.info('Starting backend server...')
-      const port = await startServer(3000)
-      log?.info(`Backend server started on port ${port}`)
-
-      // Expose backend URL to renderer via IPC
-      ipcMain.handle('backend:get-url', () => `http://localhost:${port}`)
+      // Setup database IPC handlers
+      log?.info('Setting up database handlers...')
+      setupDatabaseHandlers()
+      log?.info('Database handlers set up successfully')
 
       // Setup file manager handlers BEFORE creating window
       log?.info('Setting up file manager handlers...')
@@ -210,7 +206,6 @@ app
         log?.info('Production mode: Setting up auto-update')
         setupAutoUpdate()
 
-        // Wait for window to be ready before checking for updates
         if (mainWindow) {
           mainWindow.webContents.once('did-finish-load', () => {
             setTimeout(() => {
@@ -262,11 +257,10 @@ app.on('window-all-closed', () => {
 })
 
 // Cleanup on quit
-app.on('before-quit', async () => {
+app.on('before-quit', () => {
   log?.info('App is quitting, cleaning up...')
 
   try {
-    await stopServer()
     closeDatabase()
     log?.info('Cleanup completed')
   } catch (error) {

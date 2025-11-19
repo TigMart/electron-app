@@ -7,7 +7,7 @@ import {
   deleteTemplate
 } from '@/services/contract-template.service'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ICreateContractTemplateDTO, IUpdateContractTemplateDTO } from '../../../backend/types'
+import type { ICreateContractTemplateDTO, IUpdateContractTemplateDTO } from '../../../types'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store'
 import { useToast } from '@/hooks/useToast'

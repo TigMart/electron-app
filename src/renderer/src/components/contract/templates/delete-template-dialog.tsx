@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from 'react-i18next'
-import type { IContractTemplate } from '../../../../../backend/types'
+import type { IContractTemplate } from '../../../../../types'
 import { AlertTriangle } from 'lucide-react'
 
 interface DeleteTemplateDialogProps {

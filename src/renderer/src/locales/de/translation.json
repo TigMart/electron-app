@@ -48,7 +48,9 @@
     "size": "Größe",
     "modified": "Geändert",
     "ok": "OK",
-    "close": "Schließen"
+    "close": "Schließen",
+    "open": "Öffnen",
+    "rife": "Im Datei-Explorer anzeigen"
   },
   "FileManager": {
     "title": "Dateimanager",
@@ -103,7 +105,17 @@
     "fileUploaded": "Datei in Vorlagenverzeichnis hochgeladen",
     "fileName": "Dateiname",
     "templateNameConflict": "Vorlagenname-Konflikt",
-    "templateNameConflictMessage": "Eine Vorlage mit diesem Dateinamen existiert bereits in der Datenbank. Was möchten Sie tun?"
+    "templateNameConflictMessage": "Eine Vorlage mit diesem Dateinamen existiert bereits in der Datenbank. Was möchten Sie tun?",
+    "selectType": "Vorlagentyp auswählen",
+    "types": {
+      "contract": "Vertrag",
+      "agreement": "Vereinbarung", 
+      "invoice": "Rechnung",
+      "proposal": "Vorschlag",
+      "letter": "Brief",
+      "report": "Bericht",
+      "other": "Andere"
+    }
   },
   "Settings": {
     "title": "Einstellungen",

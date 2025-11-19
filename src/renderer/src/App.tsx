@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/helper/theme-provider'
 import { Toaster } from 'sonner'
 import { useEffect } from 'react'
 import useSettings from '@/hooks/use-settings'
+import { logger } from '@/utils/logger'
 
 /**
  * Main App Layout Component
@@ -20,7 +21,7 @@ function App(): React.JSX.Element {
   useEffect(() => {
     if (settings?.contract_templates_dir) {
       window.fileManager.setRootPath(settings.contract_templates_dir).catch((error) => {
-        console.error('Failed to set root path:', error)
+        logger.error('Failed to set root path:', error)
       })
     }
   }, [settings?.contract_templates_dir])

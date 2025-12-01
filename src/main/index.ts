@@ -7,6 +7,13 @@ import electronLog from 'electron-log'
 import { setupFileManagerHandlers } from './ipc/file-manager'
 import { initializeDatabase, closeDatabase } from './database'
 import { setupDatabaseHandlers } from './ipc/handlers'
+import { registerContractGenerationHandlers } from './ipc/contract-generation'
+import * as dotenv from 'dotenv'
+import { resolve } from 'path'
+
+// Load environment variables from .env.local
+const envPath = resolve(__dirname, '../../.env.local')
+dotenv.config({ path: envPath })
 
 const log = (() => {
   try {
@@ -199,7 +206,12 @@ app
       log?.info('Setting up file manager handlers...')
       setupFileManagerHandlers()
       log?.info('File manager handlers set up successfully')
+      // Setup contract generation handlers
+      log?.info('Setting up contract generation handlers...')
+      registerContractGenerationHandlers()
+      log?.info('Contract generation handlers set up successfully')
 
+      createWindow()
       createWindow()
 
       if (!is.dev) {
@@ -257,7 +269,7 @@ app.on('window-all-closed', () => {
 })
 
 // Cleanup on quit
-app.on('before-quit', () => {
+app.on('before-quit', async () => {
   log?.info('App is quitting, cleaning up...')
 
   try {

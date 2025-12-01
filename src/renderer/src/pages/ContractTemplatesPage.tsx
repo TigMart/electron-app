@@ -1,5 +1,5 @@
 import Loading from '@/components/common/loading'
-import Header from '@/components/contract/templates/header'
+import Header from '@/components/contract/templates/template-header'
 import TemplatesList from '@/components/contract/templates/templates-list'
 import ShowError from '@/components/helper/show-error'
 import { Button } from '@/components/ui/button'

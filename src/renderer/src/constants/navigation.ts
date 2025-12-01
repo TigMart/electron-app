@@ -14,6 +14,16 @@ export const data = {
       icon: IconContract
     },
     {
+      title: 'Navigation.Contracts',
+      url: ROUTES.CONTRACTS,
+      icon: IconContract
+    },
+    {
+      title: 'Navigation.GeneratedContracts',
+      url: ROUTES.GENERATED_CONTRACTS,
+      icon: IconContract
+    },
+    {
       title: 'Navigation.Settings',
       url: ROUTES.SETTINGS,
       icon: IconSettings

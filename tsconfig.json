@@ -4,6 +4,9 @@
     "paths": {
       "@/*": [
         "./src/renderer/src/*"
+      ],
+      "@/types": [
+        "./src/types"
       ]
     }
   },

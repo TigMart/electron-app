@@ -1,13 +1,13 @@
 {
-  "[typescript]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
   "editor.formatOnSave": true,
-  "typescript.tsdk": "node_modules\\typescript\\lib"
+  // Use Prettier for formatting
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // Always fix ESLint issues on save
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // Disable ESLint as a formatter (important!)
+  "eslint.format.enable": false,
+  // Optional but recommended
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

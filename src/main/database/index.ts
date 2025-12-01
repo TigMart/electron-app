@@ -75,6 +75,36 @@ CREATE TABLE IF NOT EXISTS contract_templates (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Contracts Table
+CREATE TABLE IF NOT EXISTS contracts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  template_id INTEGER NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (template_id) REFERENCES contract_templates(id) ON DELETE CASCADE
+);
+
+-- Conversations Table (for contract chat)
+CREATE TABLE IF NOT EXISTS conversations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  contract_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
+);
+
+-- Chat Messages Table
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conversation_id INTEGER NOT NULL,
+  role TEXT NOT NULL CHECK(role IN ('system', 'user', 'assistant')),
+  content TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+);
+
 -- Settings Table (Singleton pattern - only one row with id=1)
 CREATE TABLE IF NOT EXISTS settings (
   id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -86,6 +116,8 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_contract_templates_type ON contract_templates(type);
 CREATE INDEX IF NOT EXISTS idx_contract_templates_created_at ON contract_templates(created_at);
+CREATE INDEX IF NOT EXISTS idx_contracts_template_id ON contracts(template_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_created_at ON contracts(created_at);
 
 -- Insert default settings if not exists
 INSERT OR IGNORE INTO settings (id, contract_templates_dir, generated_contracts_dir)

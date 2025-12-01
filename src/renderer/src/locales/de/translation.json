@@ -2,6 +2,8 @@
   "Navigation": {
     "Dashboard": "Instrumententafel",
     "ContractTemplates": "Verträge Vorlagen",
+    "Contracts": "Verträge",
+    "GeneratedContracts": "Generierte Verträge",
     "Files": "Dateien",
     "FileManager": "Dateimanager",
     "Settings": "Einstellungen",
@@ -50,7 +52,26 @@
     "ok": "OK",
     "close": "Schließen",
     "open": "Öffnen",
-    "rife": "Im Datei-Explorer anzeigen"
+    "rife": "Im Datei-Explorer anzeigen",
+    "refresh": "Aktualisieren",
+    "revealInFileExplorer": "Im Datei-Explorer anzeigen"
+  },
+  "GeneratedContracts": {
+    "title": "Generierte Verträge",
+    "subtitle": "Verwalten und ansehen Sie Ihre generierten Vertragsdokumente",
+    "totalContracts": "{{count}} Vertrag",
+    "totalContracts_plural": "{{count}} Verträge",
+    "noContracts": "Keine generierten Verträge",
+    "noContractsMessage": "Generieren Sie Verträge auf der Verträge-Seite, um sie hier zu sehen.",
+    "notConfigured": "Verzeichnis nicht konfiguriert",
+    "notConfiguredMessage": "Bitte konfigurieren Siedas Verzeichnis für generierte Verträge in den Einstellungen.",
+    "deleteTitle": "Generierten Vertrag löschen",
+    "deleteMessage": "Sind Sie sicher, dass Sie \"{{fileName}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteSuccess": "Vertrag erfolgreich gelöscht",
+    "deleteFailed": "Fehler beim Löschen des Vertrags",
+    "failedToLoad": "Fehler beim Laden der generierten Verträge",
+    "failedToOpen": "Fehler beim Öffnen des Vertrags",
+    "failedToReveal": "Fehler beim Anzeigen im Datei-Explorer"
   },
   "FileManager": {
     "title": "Dateimanager",
@@ -109,7 +130,7 @@
     "selectType": "Vorlagentyp auswählen",
     "types": {
       "contract": "Vertrag",
-      "agreement": "Vereinbarung", 
+      "agreement": "Vereinbarung",
       "invoice": "Rechnung",
       "proposal": "Vorschlag",
       "letter": "Brief",

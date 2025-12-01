@@ -19,6 +19,27 @@ export interface IUpdateContractTemplateDTO {
   filePath?: string
 }
 
+export interface IContract {
+  id: number
+  title: string
+  template_id: number
+  template_title?: string
+  template_type?: string
+  template_docx_path?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ICreateContractDTO {
+  title: string
+  templateId: number
+}
+
+export interface IUpdateContractDTO {
+  title?: string
+  templateId?: number
+}
+
 export interface ISettings {
   id: number
   contract_templates_dir: string | null

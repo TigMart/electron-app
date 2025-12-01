@@ -12,8 +12,9 @@ import {
   UploadOptions,
   UploadResult,
   UploadProgress,
-  IContractTemplate
-} from '../types'
+  IContractTemplate,
+  IContract
+} from '../types/index'
 
 declare global {
   interface Window {
@@ -93,6 +94,28 @@ declare global {
         ) => Promise<IContractTemplate | null>
         delete: (id: number) => Promise<boolean>
         getByType: (type: string) => Promise<Array<IContractTemplate>>
+      }
+      contracts: {
+        getAll: () => Promise<Array<IContract>>
+        getById: (id: number) => Promise<IContract | null>
+        create: (data: { title: string; templateId: number }) => Promise<IContract>
+        update: (
+          id: number,
+          data: { title?: string; templateId?: number }
+        ) => Promise<IContract | null>
+        delete: (id: number) => Promise<boolean>
+        listGenerated: (directoryPath: string) => Promise<
+          Array<{
+            name: string
+            path: string
+            size: number
+            modified: number
+            created: number
+          }>
+        >
+        openFile: (filePath: string) => Promise<boolean>
+        revealInExplorer: (filePath: string) => Promise<boolean>
+        deleteGenerated: (filePath: string) => Promise<boolean>
       }
       settings: {
         get: () => Promise<{

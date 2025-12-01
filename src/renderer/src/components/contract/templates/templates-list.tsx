@@ -12,18 +12,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { FileText, MoreVertical, Pencil, Trash2, Calendar, FolderOpen } from 'lucide-react'
 import useContractTemplates from '@/hooks/use-contract-templates'
-import useSettings from '@/hooks/use-settings'
 import { useTranslation } from 'react-i18next'
 import { formatDate } from '@/utils/format'
 import { DeleteTemplateDialog } from '@/components/contract/templates/delete-template-dialog'
 import type { IContractTemplate } from '../../../../../types'
 import { useAppStore } from '@/store'
-import { logger } from '@/utils/logger'
 
 function TemplatesList() {
   const { t, i18n } = useTranslation()
   const { templates, templatesLoading, templatesError, deleteTemplate } = useContractTemplates()
-  const { settings } = useSettings()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [templateToDelete, setTemplateToDelete] = useState<IContractTemplate | null>(null)
 
@@ -32,30 +29,18 @@ function TemplatesList() {
   const setMode = useAppStore((store) => store.setMode)
 
   const handleDoubleClick = async (template: IContractTemplate) => {
-    if (!settings?.contract_templates_dir) {
-      logger.error('Templates directory not configured')
-      return
-    }
-    const fullPath = `${settings.contract_templates_dir}\\${template.file_path}`
-    await window.fileManager.openFile(fullPath)
+    // template.file_path is now an absolute path
+    await window.fileManager.openFile(template.file_path)
   }
 
   const handleOpen = async (template: IContractTemplate) => {
-    if (!settings?.contract_templates_dir) {
-      logger.error('Templates directory not configured')
-      return
-    }
-    const fullPath = `${settings.contract_templates_dir}\\${template.file_path}`
-    await window.fileManager.openFile(fullPath)
+    // template.file_path is now an absolute path
+    await window.fileManager.openFile(template.file_path)
   }
 
   const handleRevealInFileExplorer = async (template: IContractTemplate) => {
-    if (!settings?.contract_templates_dir) {
-      logger.error('Templates directory not configured')
-      return
-    }
-    const fullPath = `${settings.contract_templates_dir}\\${template.file_path}`
-    await window.fileManager.openInExplorer(fullPath)
+    // template.file_path is now an absolute path
+    await window.fileManager.openInExplorer(template.file_path)
   }
 
   const handleEdit = (template: IContractTemplate) => {
@@ -77,10 +62,8 @@ function TemplatesList() {
   const handleDeleteConfirm = async () => {
     if (templateToDelete) {
       await deleteTemplate(templateToDelete.id)
-      await window.fileManager.remove(
-        [`${settings?.contract_templates_dir}\\${templateToDelete.file_path}`],
-        { toTrash: true }
-      )
+      // template.file_path is now an absolute path
+      await window.fileManager.remove([templateToDelete.file_path], { toTrash: true })
       setTemplateToDelete(null)
     }
   }

@@ -2,6 +2,8 @@
   "Navigation": {
     "Dashboard": "Dashboard",
     "ContractTemplates": "Contract Templates",
+    "Contracts": "Contracts",
+    "GeneratedContracts": "Generated Contracts",
     "Files": "Files",
     "FileManager": "File Manager",
     "Settings": "Settings",
@@ -50,7 +52,31 @@
     "ok": "OK",
     "close": "Close",
     "open": "Open",
-    "rife": "Reveal In File Explorer"
+    "rife": "Reveal In File Explorer",
+    "creating": "Creating...",
+    "title": "Title",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "error": "An error occurred",
+    "refresh": "Refresh",
+    "revealInFileExplorer": "Reveal in File Explorer"
+  },
+  "GeneratedContracts": {
+    "title": "Generated Contracts",
+    "subtitle": "View and manage your generated contract documents",
+    "totalContracts": "{{count}} contract",
+    "totalContracts_plural": "{{count}} contracts",
+    "noContracts": "No Generated Contracts",
+    "noContractsMessage": "Generate contracts from the Contracts page to see them here.",
+    "notConfigured": "Directory Not Configured",
+    "notConfiguredMessage": "Please configure the Generated Contracts Directory in Settings.",
+    "deleteTitle": "Delete Generated Contract",
+    "deleteMessage": "Are you sure you want to delete \"{{fileName}}\"? This action cannot be undone.",
+    "deleteSuccess": "Contract deleted successfully",
+    "deleteFailed": "Failed to delete contract",
+    "failedToLoad": "Failed to load generated contracts",
+    "failedToOpen": "Failed to open contract",
+    "failedToReveal": "Failed to reveal in file explorer"
   },
   "FileManager": {
     "title": "File Manager",
@@ -111,16 +137,35 @@
     "selectType": "Select template type",
     "types": {
       "contract": "Contract",
-      "agreement": "Agreement", 
+      "agreement": "Agreement",
       "invoice": "Invoice",
       "proposal": "Proposal",
       "letter": "Letter",
       "report": "Report",
       "other": "Other"
     }
-    
-
-
+  },
+  "Contracts": {
+    "title": "Contracts",
+    "contractTitle": "Contract Title",
+    "enterTitle": "Enter contract title",
+    "selectTemplate": "Select Template",
+    "chooseTemplate": "Choose a template",
+    "createContract": "Create Contract",
+    "createDescription": "Create a new contract from a template",
+    "updateContract": "Update Contract",
+    "updateDescription": "Update contract title or change template",
+    "deleteContract": "Delete Contract",
+    "deleteDescription": "Are you sure you want to delete '{{title}}'? This action cannot be undone.",
+    "contractCreated": "Contract created successfully",
+    "contractUpdated": "Contract updated successfully",
+    "contractDeleted": "Contract deleted successfully",
+    "noContracts": "No Contracts",
+    "noContractsDescription": "You haven't created any contracts yet. Click the button below to create your first contract.",
+    "contractDetails": "Contract Details",
+    "template": "Template",
+    "contractGeneration": "Contract Generation",
+    "generationPlaceholder": "Contract generation via OpenAI will be implemented here. This feature will allow you to generate contract text based on your selected template and custom parameters."
   },
   "Settings": {
     "title": "Settings",

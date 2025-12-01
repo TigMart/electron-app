@@ -106,6 +106,22 @@ const databaseAPI = {
     getByType: (type: string) => ipcRenderer.invoke('db:templates:getByType', type)
   },
 
+  // Contracts
+  contracts: {
+    getAll: () => ipcRenderer.invoke('db:contracts:getAll'),
+    getById: (id: number) => ipcRenderer.invoke('db:contracts:getById', id),
+    create: (data: any) => ipcRenderer.invoke('db:contracts:create', data),
+    update: (id: number, data: any) => ipcRenderer.invoke('db:contracts:update', id, data),
+    delete: (id: number) => ipcRenderer.invoke('db:contracts:delete', id),
+    listGenerated: (directoryPath: string) =>
+      ipcRenderer.invoke('db:contracts:listGenerated', directoryPath),
+    openFile: (filePath: string) => ipcRenderer.invoke('db:contracts:openFile', filePath),
+    revealInExplorer: (filePath: string) =>
+      ipcRenderer.invoke('db:contracts:revealInExplorer', filePath),
+    deleteGenerated: (filePath: string) =>
+      ipcRenderer.invoke('db:contracts:deleteGenerated', filePath)
+  },
+
   // Settings
   settings: {
     get: () => ipcRenderer.invoke('db:settings:get'),

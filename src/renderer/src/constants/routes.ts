@@ -5,6 +5,9 @@
 export const ROUTES = {
   DASHBOARD: '/',
   CONTRACT_TEMPLATES: '/contract-templates',
+  CONTRACTS: '/contracts',
+  CONTRACT_DETAIL: '/contracts/:id',
+  GENERATED_CONTRACTS: '/generated-contracts',
   SETTINGS: '/settings',
   NOT_FOUND: '*'
 } as const
@@ -29,5 +32,7 @@ export interface RouteConfig {
 export const NAVIGATION_ROUTES: RouteConfig[] = [
   { path: ROUTES.DASHBOARD, label: 'Dashboard' },
   { path: ROUTES.CONTRACT_TEMPLATES, label: 'ContractTemplates' },
+  { path: ROUTES.CONTRACTS, label: 'Contracts' },
+  { path: ROUTES.GENERATED_CONTRACTS, label: 'GeneratedContracts' },
   { path: ROUTES.SETTINGS, label: 'Settings' }
 ]

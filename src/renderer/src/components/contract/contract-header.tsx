@@ -1,20 +1,22 @@
 import { Button } from '@/components/ui/button'
+import { useAppStore } from '@/store'
 import { RefreshCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import ContarctTemplateDialog from '@/components/contract/templates/template-dialog'
 
-function Header() {
+function ContractHeader() {
   const { t } = useTranslation()
-  const hanldeRefresh = () => {
+  const openCreateDialog = useAppStore((state) => state.openCreateDialog)
+
+  const handleRefresh = () => {
     window.location.reload()
   }
 
   return (
     <header className="flex w-full items-center justify-between border-b p-2">
-      <h1 className="text-2xl font-bold">{t('ContractTemplates.title')}</h1>
+      <h1 className="text-2xl font-bold">{t('Contracts.title')}</h1>
       <div id="actions" className="flex items-center space-x-2">
-        <ContarctTemplateDialog />
-        <Button variant="secondary" size="sm" onClick={hanldeRefresh}>
+        <Button onClick={openCreateDialog}>{t('Contracts.createContract')}</Button>
+        <Button variant="secondary" size="sm" onClick={handleRefresh}>
           <RefreshCcw />
         </Button>
       </div>
@@ -22,4 +24,4 @@ function Header() {
   )
 }
 
-export default Header
+export default ContractHeader

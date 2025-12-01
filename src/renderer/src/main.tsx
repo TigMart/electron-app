@@ -12,6 +12,9 @@ import { queryClient } from './lib/query-client'
 // Lazy load pages for better performance
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const ContractTemplatesPage = lazy(() => import('./pages/ContractTemplatesPage'))
+const ContractsPage = lazy(() => import('./pages/ContractsPage'))
+const ContractDetailPage = lazy(() => import('./pages/ContractDetailPage'))
+const GeneratedContractsPage = lazy(() => import('./pages/GeneratedContractsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
@@ -38,6 +41,9 @@ createRoot(document.getElementById('root')!).render(
             {/* Nested routes */}
             <Route index element={<DashboardPage />} />
             <Route path={ROUTES.CONTRACT_TEMPLATES} element={<ContractTemplatesPage />} />
+            <Route path={ROUTES.CONTRACTS} element={<ContractsPage />} />
+            <Route path={ROUTES.CONTRACT_DETAIL} element={<ContractDetailPage />} />
+            <Route path={ROUTES.GENERATED_CONTRACTS} element={<GeneratedContractsPage />} />
             <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
 
             {/* 404 catch-all route */}

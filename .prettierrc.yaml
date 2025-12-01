@@ -3,4 +3,5 @@ semi: false
 printWidth: 100
 tabWidth: 2
 trailingComma: none
+endOfLine: lf
 plugins: [prettier-plugin-tailwindcss]

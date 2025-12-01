@@ -177,19 +177,24 @@ export function ContractTemplateForm() {
   }
 
   const saveTemplate = async (values: FormValues): Promise<void> => {
+    // Get the full absolute path
+    const templatesRoot = await getTemplatesRoot()
+    const fileName = values.filePath.split(/[/\\]/).pop()!
+    const fullPath = `${templatesRoot}\\${fileName}`
+
     if (template) {
       // Update existing
       const updateData: IUpdateContractTemplateDTO = {}
       if (values.title !== template.title) updateData.title = values.title
       if (values.type !== template.type) updateData.type = values.type
-      if (values.filePath !== template.file_path) updateData.filePath = values.filePath
+      if (fullPath !== template.file_path) updateData.filePath = fullPath
 
       await updateTemplate({ id: template.id, data: updateData })
     } else {
       const data: ICreateContractTemplateDTO = {
         title: values.title,
         type: values.type,
-        filePath: values.filePath
+        filePath: fullPath
       }
       await createTemplate(data)
     }
